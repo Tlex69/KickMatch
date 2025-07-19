@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 15,
-    marginTop: 10,
+    marginTop: 2,
     alignSelf: "flex-start",
   },
   title: {

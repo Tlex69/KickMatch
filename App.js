@@ -22,7 +22,10 @@ import HistoryScreen from "./src/screen/HistoryScreen";
 import OrganizerRegisterScreen from "./src/screen/OrganizerRegisterScreen";
 import OrganizerFormScreen from "./src/screen/OrganizerFormScreen";
 import LoadingScreen from "./src/screen/LoadingScreen";
-
+import RegisterCompetitionScreen from "./src/screen/RegisterCompetitionScreen";
+import PlayerRegistrationScreen from "./src/screen/PlayerRegistrationScreen";
+import PaymentScreen from "./src/screen/PaymentScreen";
+import ListPlayerScreen from "./src/screen/ListPlayerScreen";
 import NavbarO from "./src/Organizer/NavbarO";
 SplashScreen.preventAutoHideAsync();
 
@@ -131,8 +134,28 @@ export default function App() {
             options={{ headerShown: false }}
           />
           <Stack.Screen
+            name="RegisterCompetition"
+            component={RegisterCompetitionScreen}
+            options={{ headerShown: false }}
+          /> 
+           <Stack.Screen
             name="HomeO"
             component={NavbarO}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="PlayerRegistration"
+            component={PlayerRegistrationScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="Payment"
+            component={PaymentScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="ListPlayer"
+            component={ListPlayerScreen}
             options={{ headerShown: false }}
           />
         </Stack.Navigator>

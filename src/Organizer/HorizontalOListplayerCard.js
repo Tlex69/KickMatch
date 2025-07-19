@@ -6,28 +6,15 @@ export default function HorizontalCard({
   image,
   title,
   subtitle,
-  isRegistered = false,
-  totalTeams = 12,
-  maxTeams = 14,
+  totalTeams = 0,
+  maxTeams = 0,
   borderColor = '#07F469',
-  buttonColor = '#154127',
-  buttonTextColor = '#07F469',
-  registeredButtonColor = '#444',
-  registeredButtonTextColor = '#ccc',
   titleColor = '#07F469',
+  statusText = "เปิดรับสมัครอยู่",
+  teamStatusText = `สมัครแล้ว ${totalTeams}/${maxTeams} ทีม`,
+  statusColor = "#07F469",
 }) {
   const navigation = useNavigation();
-
-  const handleRegister = () => {
-    if (!isRegistered) {
-      navigation.navigate("Detail", {
-        title,
-        subtitle,
-        totalTeams,
-        maxTeams,
-      });
-    }
-  };
 
   return (
     <View style={[styles.card, { borderColor }]}>
@@ -36,38 +23,38 @@ export default function HorizontalCard({
         <Text style={[styles.title, { color: titleColor }]} numberOfLines={1}>
           {title}
         </Text>
-        <Text style={styles.subtitle} numberOfLines={2}>
+        <Text style={styles.subtitle} numberOfLines={1}>
           {subtitle}
         </Text>
-        <Text style={styles.teamCount}>
-          {totalTeams} / {maxTeams} ทีม
-        </Text>
+
+        <View style={{ marginTop: 4 }}>
+          <Text style={[styles.statusText, { color: statusColor }]}>
+            {statusText}
+          </Text>
+          {teamStatusText ? (
+            <Text style={styles.teamCount}>{teamStatusText}</Text>
+          ) : null}
+        </View>
+
         <View style={styles.footerRight}>
           <TouchableOpacity
-            style={[
-              styles.registerButton,
-              {
-                backgroundColor: isRegistered ? registeredButtonColor : buttonColor,
-              },
-            ]}
-            onPress={handleRegister}
-            disabled={isRegistered}
+            style={[styles.registerButton]}
+            onPress={() =>
+              navigation.navigate("Detail", {
+                title,
+                subtitle,
+                totalTeams,
+                maxTeams,
+              })
+            }
           >
-            <Text
-              style={[
-                styles.registerText,
-                { color: isRegistered ? registeredButtonTextColor : buttonTextColor },
-              ]}
-            >
-              {isRegistered ? "สมัครแล้ว" : "สมัครเลย"}
-            </Text>
+            <Text style={styles.registerText}>ดูรายชื่อทีม</Text>
           </TouchableOpacity>
         </View>
       </View>
     </View>
   );
 }
-
 
 const styles = StyleSheet.create({
   card: {
@@ -77,7 +64,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     overflow: "hidden",
     marginBottom: 18,
-    width: "100%", 
+    width: "100%",
     height: 105,
     borderWidth: 1,
   },
@@ -96,12 +83,21 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 14,
     fontFamily: "Kanit-SemiBold",
-    marginBottom: 4,
   },
   subtitle: {
     fontSize: 11,
     fontFamily: "Kanit-Regular",
     color: "#aaa",
+  },
+  statusText: {
+    fontSize: 12,
+    fontFamily: "Kanit-SemiBold",
+    marginBottom: 2,
+  },
+  teamCount: {
+    fontSize: 11,
+    color: "#ccc",
+    fontFamily: "Kanit-Regular",
   },
   footerRight: {
     position: "absolute",
@@ -109,13 +105,6 @@ const styles = StyleSheet.create({
     right: 10,
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-  },
-  teamCount: {
-    fontSize: 11,
-    color: "#ccc",
-    fontFamily: "Kanit-Regular",
-    marginRight: 100,
   },
   registerButton: {
     width: 80,
@@ -123,9 +112,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: '#154127', // ✅ สีเขียวคงที่
   },
   registerText: {
     fontFamily: "Kanit-SemiBold",
     fontSize: 12,
+    color: '#07F469', // ✅ ข้อความสีดำ
   },
 });

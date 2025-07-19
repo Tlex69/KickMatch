@@ -42,7 +42,7 @@ export default function RankingScreen() {
         {competitions.length === 0 ? (
           <View style={styles.emptyContent}>
             <DocFail width={110} height={120} fill="#141414" />
-            <Text style={styles.emptyText}>ยังไม่มีรายการแข่งขัน</Text>
+            <Text style={styles.emptyText}>ยังไม่มีรายการ</Text>
           </View>
         ) : (
           <View style={styles.boxcard}>

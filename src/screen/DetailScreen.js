@@ -92,9 +92,7 @@ export default function DetailScreen() {
         </View>
         <TouchableOpacity
           style={styles.registerButtonFixed}
-          onPress={() => {
-            console.log("สมัครเลย");
-          }}
+          onPress={() => navigation.navigate("RegisterCompetition")}
         >
           <Text style={styles.registerButtonText}>สมัครแข่ง</Text>
         </TouchableOpacity>

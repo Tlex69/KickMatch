@@ -5,16 +5,16 @@ import {
   StyleSheet,
   StatusBar,
   ScrollView,
+  TouchableOpacity,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
-import { ViewGridDetail2 } from "../../components/icon/ViewGridDetail2";
 import { DocFail } from "../../components/icon/DocFail";
+import { FootballIcon } from "../../components/icon/FootballIcon";
+import { AntDesign } from "@expo/vector-icons"; // ไอคอนปุ่ม
 
-export default function CompetitionlistScreen() {
+export default function RegisterTourScreen() {
   const navigation = useNavigation();
-
-  // สมมติข้อมูลรายการแข่ง
   const [competitions, setCompetitions] = useState([]); 
 
   return (
@@ -30,26 +30,33 @@ export default function CompetitionlistScreen() {
         <View style={styles.headerContent}>
           <View style={styles.textBox}>
             <Text style={styles.titleText}>รายการแข่งขัน</Text>
-            <Text style={styles.subTitleText}>รายการแข่งขันที่คุณสมัคร</Text>
+            <Text style={styles.subTitleText}>รายการแข่งขันทั้งหมดที่คุณสร้าง</Text>
           </View>
-
-          <ViewGridDetail2 size={45} color="#fff" />
+          <FootballIcon size={5} color="#fff" />
         </View>
       </LinearGradient>
+
+      {/* ปุ่มอยู่ตรงนี้ */}
+      <TouchableOpacity style={styles.addButton} onPress={() => navigation.navigate("CreateCompetitionScreen")}>
+        <AntDesign name="plus" size={15} color="#07F469" />
+        <Text style={styles.addButtonText}>สร้างรายการแข่งขัน</Text>
+      </TouchableOpacity>
 
       <ScrollView
         style={styles.scrollContainer}
         contentContainerStyle={competitions.length === 0 && styles.emptyContainer}
         showsVerticalScrollIndicator={false}
       >
+        
+
         {competitions.length === 0 ? (
           <View style={styles.emptyContent}>
             <DocFail width={110} height={120} fill="#141414" />
-            <Text style={styles.emptyText}>ยังไม่มีรายการ</Text>
+            <Text style={styles.emptyText}>ยังไม่มีรายการแข่งขัน</Text>
           </View>
         ) : (
           <View style={styles.boxcard}>
-            {/* แสดงรายการแข่งขันที่มี */}
+            {/* แสดงรายการแข่งขัน */}
           </View>
         )}
       </ScrollView>
@@ -91,6 +98,23 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "Kanit-SemiBold",
   },
+  addButton: {
+  backgroundColor: "#202020",
+  paddingVertical: 6,
+  paddingHorizontal: 12,
+  borderRadius: 15,
+  marginTop: 20,
+  alignSelf: "flex-start",
+  flexDirection: "row",        
+  alignItems: "center",        
+},
+addButtonText: {
+  color: "#07F469",
+  fontSize: 13,
+  fontFamily: "Kanit-SemiBold",
+  marginLeft: 6,               
+},
+
   scrollContainer: {
     marginTop: 15,
     width: "100%",
@@ -107,7 +131,7 @@ const styles = StyleSheet.create({
   emptyContent: {
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 200
+    marginBottom: 200,
   },
   emptyText: {
     color: "#383838",
@@ -115,4 +139,5 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontFamily: "Kanit-SemiBold",
   },
+  
 });

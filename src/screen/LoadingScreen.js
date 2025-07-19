@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
 } from "react-native";
 import RoundCheckCircle from "../../components/icon/RoundCheckCircle";
-
 export default function LoadingScreen({ navigation }) {
   const rotateAnim = useRef(new Animated.Value(0)).current;
   const [isSuccess, setIsSuccess] = useState(false);
@@ -87,11 +86,11 @@ onPress={() => navigation.navigate("HomeO", { plan: "advanced" })}
 </TouchableOpacity>
 
 <TouchableOpacity
-  style={styles.button}
+  style={styles.button2}
 // จาก LoadingScreen
 onPress={() => navigation.navigate("Home")}
 >
-  <Text style={styles.buttonText}>กลับไปหน้าหลัก</Text>
+  <Text style={styles.buttonText2}>กลับไปหน้าหลัก</Text>
 </TouchableOpacity>
     </View>
   );
@@ -161,4 +160,18 @@ const styles = StyleSheet.create({
     fontFamily: "Kanit-SemiBold",
     marginTop: 10,
   },
+  button2:{
+     backgroundColor: "#d1d1d1",
+    height: 50,
+    width: 250,
+    borderRadius: 25,
+    alignItems: "center",
+    marginTop:15
+  },
+  buttonText2:{
+     color: "#4f4f4f",
+    fontSize: 17,
+    fontFamily: "Kanit-SemiBold",
+    marginTop: 10,
+  }
 });

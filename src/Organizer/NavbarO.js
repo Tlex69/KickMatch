@@ -3,13 +3,13 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 
 import HomeOScreen from "../../src/Organizer/HomeOScreen";
 import UserOScreen from "../../src/Organizer/UserOScreen";
-
+import ListFootballScreen from "./ListFootballScreen";
 
 import { ViewGridDetail } from "../../components/icon/ViewGridDetail";
 import { HomeOutline } from "../../components/icon/HomeOutline";
-import { Ranking } from "../../components/icon/Ranking";
+import { FootballIcon } from "../../components/icon/FootballIcon";
 import { UserRound } from "../../components/icon/UserRound";
-
+import RegisterTourScreen from "./RegisterTourScreen";
 const Tab = createBottomTabNavigator();
 
 export default function NavbarO() {
@@ -50,12 +50,13 @@ export default function NavbarO() {
           ),
         }}
       />
+     
       <Tab.Screen
-        name="ประเภท"
-        component={UserOScreen}
+        name="สถิติการแข่งขัน"
+        component={ListFootballScreen}
         options={{
           tabBarIcon: ({ size, focused }) => (
-            <ViewGridDetail
+            <FootballIcon
               color={focused ? "#154127" : "#36AE68"}
               width={size}
               height={size}
@@ -64,12 +65,12 @@ export default function NavbarO() {
           ),
         }}
       />
-      <Tab.Screen
-        name="สถิติการแข่งขัน"
-        component={UserOScreen}
+       <Tab.Screen
+        name="ประเภท"
+        component={RegisterTourScreen}
         options={{
           tabBarIcon: ({ size, focused }) => (
-            <Ranking
+            <ViewGridDetail
               color={focused ? "#154127" : "#36AE68"}
               width={size}
               height={size}

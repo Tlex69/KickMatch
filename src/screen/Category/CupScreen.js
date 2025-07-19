@@ -98,12 +98,12 @@ const styles = StyleSheet.create({
   },
   titleText: {
     color: "#fff",
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: "Kanit-SemiBold",
   },
   subTitleText: {
     color: "#fff",
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: "Kanit-SemiBold",
   },
   scrollContainer: {

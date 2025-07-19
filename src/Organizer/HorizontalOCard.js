@@ -59,7 +59,7 @@ export default function HorizontalCard({
                 { color: isRegistered ? registeredButtonTextColor : buttonTextColor },
               ]}
             >
-              {isRegistered ? "สมัครแล้ว" : "สมัครเลย"}
+              {isRegistered ? "รายละเอียด" : "รายละเอียด"}
             </Text>
           </TouchableOpacity>
         </View>

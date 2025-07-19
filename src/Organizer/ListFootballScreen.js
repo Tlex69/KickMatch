@@ -1,21 +1,15 @@
 import React, { useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  StatusBar,
-  ScrollView,
-} from "react-native";
+import { View, Text, StyleSheet, StatusBar, ScrollView } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
-import { ViewGridDetail2 } from "../../components/icon/ViewGridDetail2";
 import { DocFail } from "../../components/icon/DocFail";
+import { FootballIcon } from "../../components/icon/FootballIcon";
 
-export default function CompetitionlistScreen() {
+export default function ListFootballScreen() {
   const navigation = useNavigation();
 
   // สมมติข้อมูลรายการแข่ง
-  const [competitions, setCompetitions] = useState([]); 
+  const [competitions, setCompetitions] = useState([]);
 
   return (
     <View style={styles.container}>
@@ -30,27 +24,31 @@ export default function CompetitionlistScreen() {
         <View style={styles.headerContent}>
           <View style={styles.textBox}>
             <Text style={styles.titleText}>รายการแข่งขัน</Text>
-            <Text style={styles.subTitleText}>รายการแข่งขันที่คุณสมัคร</Text>
+            <Text style={styles.subTitleText}>
+              รายการแข่งที่กำลังจะเกิดขึ้น
+            </Text>
           </View>
 
-          <ViewGridDetail2 size={45} color="#fff" />
+          <FootballIcon size={5} color="#fff" />
         </View>
       </LinearGradient>
-
+      <View style={styles.boxtitle}>
+        <Text style={styles.title}>รายการแข่งที่กำลังจะเกิดขึ้น</Text>
+      </View>
       <ScrollView
         style={styles.scrollContainer}
-        contentContainerStyle={competitions.length === 0 && styles.emptyContainer}
+        contentContainerStyle={
+          competitions.length === 0 && styles.emptyContainer
+        }
         showsVerticalScrollIndicator={false}
       >
         {competitions.length === 0 ? (
           <View style={styles.emptyContent}>
             <DocFail width={110} height={120} fill="#141414" />
-            <Text style={styles.emptyText}>ยังไม่มีรายการ</Text>
+            <Text style={styles.emptyText}>ยังไม่มีรายการแข่งขัน</Text>
           </View>
         ) : (
-          <View style={styles.boxcard}>
-            {/* แสดงรายการแข่งขันที่มี */}
-          </View>
+          <View style={styles.boxcard}>{/* แสดงรายการแข่งขันที่มี */}</View>
         )}
       </ScrollView>
     </View>
@@ -107,12 +105,25 @@ const styles = StyleSheet.create({
   emptyContent: {
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 200
+    marginBottom: 200,
   },
   emptyText: {
     color: "#383838",
     fontSize: 14,
     marginTop: 10,
+    fontFamily: "Kanit-SemiBold",
+  },
+  boxtitle: {
+    backgroundColor: "#202020",
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 15,
+    marginTop: 20,
+    alignSelf: "flex-start",
+  },
+  title: {
+    color: "#07F469",
+    fontSize: 13,
     fontFamily: "Kanit-SemiBold",
   },
 });
