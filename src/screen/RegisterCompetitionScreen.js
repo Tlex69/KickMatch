@@ -100,18 +100,25 @@ export default function RegisterCompetitionScreen() {
                 styles.input,
                 { marginTop: 5, height: 35, paddingLeft: 12 },
               ]}
-              placeholder="ใส่ชื่อทีมที่นี่"
+              placeholder="เช่น น้ำเงิน, ดำ-แดง"
               placeholderTextColor="#aaa"
               value={teamName}
               onChangeText={setTeamName}
+                selectionColor="#07F469"
+
             />
             <Text style={styles.infoLabel}>สีเสื้อ:</Text>
             <TextInput
-              style={[styles.input, { marginTop: 5, height: 35, paddingLeft: 12  }]}
+              style={[
+                styles.input,
+                { marginTop: 5, height: 35, paddingLeft: 12 },
+              ]}
               placeholder="เช่น น้ำเงิน, ดำ-แดง"
               placeholderTextColor="#aaa"
               value={teamColor}
               onChangeText={setTeamColor}
+                selectionColor="#07F469"
+
             />
           </View>
         </View>
@@ -217,9 +224,9 @@ const styles = StyleSheet.create({
     borderColor: "#07F469",
     color: "#141414",
     borderRadius: 20,
+    alignContent: "center",
+    justifyContent: "center",
     width: "100%",
-    height: 50,
-    padding: 15,
     fontFamily: "Kanit-Regular",
   },
   logoRow: {
