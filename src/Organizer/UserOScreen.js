@@ -91,6 +91,7 @@ export default function UserOScreen() {
           <OptionItem
             label="ผู้ช่วยในการแข่งขัน"
             icon={<RoundSupportAgent size={20} color="#07F469" />}
+            onPress={() => navigation.navigate("ManagerO")}
           />
           <OptionItem
               label="เปลี่ยนเป็นผู้ใช้ทั่วไป"

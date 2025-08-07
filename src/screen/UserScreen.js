@@ -89,7 +89,7 @@ export default function UserScreen() {
           </View>
 
           <OptionItem
-            label="สมัครเป็นฝ่ายจัด"
+            label="จัดการแข่งขัน"
             icon={
               <FootballPitch
                 name="chalkboard-teacher"
@@ -100,11 +100,10 @@ export default function UserScreen() {
             onPress={() => navigation.navigate("Organizerform")}
           />
           <OptionItem
-            label="ผู้ช่วยในการแข่งขัน"
-            icon={
-              <RoundSupportAgent name="headset-mic" size={20} color="#07F469" />
-            }
-            onPress={() => {}}
+             label="ผู้ช่วยในการแข่งขัน"
+                        icon={<RoundSupportAgent size={20} color="#07F469" />}
+                        onPress={() => navigation.navigate("ManagerO")}
+
           />
         </View>
       </View>

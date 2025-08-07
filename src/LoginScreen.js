@@ -111,14 +111,14 @@ const styles = StyleSheet.create({
   alignItems: "center",
   marginTop: 120,
   width: 335,
-  height: 60,
+  height: 55,
   alignSelf: "center",
 },
 
   buttonText: {
     color: "#154127",
     fontFamily: 'Kanit-SemiBold',
-    fontSize: 17,
+    fontSize: 17,marginBottom: -2,
   },
   registerText: {
   marginTop: 30, 

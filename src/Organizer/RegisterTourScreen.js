@@ -37,7 +37,7 @@ export default function RegisterTourScreen() {
       </LinearGradient>
 
       {/* ปุ่มอยู่ตรงนี้ */}
-      <TouchableOpacity style={styles.addButton} onPress={() => navigation.navigate("CreateCompetitionScreen")}>
+      <TouchableOpacity style={styles.addButton} onPress={() => navigation.navigate("RegisterFormMatch")}>
         <AntDesign name="plus" size={15} color="#07F469" />
         <Text style={styles.addButtonText}>สร้างรายการแข่งขัน</Text>
       </TouchableOpacity>

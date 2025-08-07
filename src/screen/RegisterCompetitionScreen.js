@@ -95,17 +95,15 @@ export default function RegisterCompetitionScreen() {
           </TouchableOpacity>
           <View style={styles.teamInfoBox}>
             <Text style={styles.infoLabel}>ชื่อทีม:</Text>
-            <TextInput
+           <TextInput
               style={[
                 styles.input,
                 { marginTop: 5, height: 35, paddingLeft: 12 },
               ]}
               placeholder="เช่น น้ำเงิน, ดำ-แดง"
               placeholderTextColor="#aaa"
-              value={teamName}
-              onChangeText={setTeamName}
-                selectionColor="#07F469"
-
+              value={teamColor}
+              onChangeText={setTeamColor}
             />
             <Text style={styles.infoLabel}>สีเสื้อ:</Text>
             <TextInput
@@ -117,8 +115,6 @@ export default function RegisterCompetitionScreen() {
               placeholderTextColor="#aaa"
               value={teamColor}
               onChangeText={setTeamColor}
-                selectionColor="#07F469"
-
             />
           </View>
         </View>
@@ -315,12 +311,13 @@ const styles = StyleSheet.create({
     color: "#141414",
     padding: 6,
     borderRadius: 10,
-    fontSize: 12,
+    fontSize: 14,
     borderWidth: 1,
     borderColor: "#07F469",
     textAlign: "center",
     fontFamily: "Kanit-Regular",
     width: 110,
+    height: 30,
   },
   footer: {
     position: "absolute",

@@ -27,6 +27,9 @@ import PlayerRegistrationScreen from "./src/screen/PlayerRegistrationScreen";
 import PaymentScreen from "./src/screen/PaymentScreen";
 import ListPlayerScreen from "./src/screen/ListPlayerScreen";
 import NavbarO from "./src/Organizer/NavbarO";
+import LoadingPaymentScreen from "./src/screen/LoadingPaymentScreen";
+import RegisterFormMatchScreen from "./src/Organizer/RegisterFormMatchScreen";
+import ManagerOScreen from "./src/Organizer/ManagerOScreen";
 SplashScreen.preventAutoHideAsync();
 
 const Stack = createNativeStackNavigator();
@@ -156,6 +159,21 @@ export default function App() {
           <Stack.Screen
             name="ListPlayer"
             component={ListPlayerScreen}
+            options={{ headerShown: false }}
+          />
+           <Stack.Screen
+            name="LoadingPayment"
+            component={LoadingPaymentScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="RegisterFormMatch"
+            component={RegisterFormMatchScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="ManagerO"
+            component={ManagerOScreen}
             options={{ headerShown: false }}
           />
         </Stack.Navigator>

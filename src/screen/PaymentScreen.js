@@ -156,7 +156,7 @@ export default function PaymentScreen() {
             styles.submitButton,
             { backgroundColor: slipImage ? "#07F469" : "#666666" },
           ]}
-          onPress={onConfirm}
+          onPress={() => navigation.navigate("LoadingPayment")}
           disabled={!slipImage}
         >
           <Text style={styles.submitButtonText}>ยืนยันการชำระเงิน</Text>
