@@ -19,7 +19,6 @@ import ElevenScreen from "./src/screen/Category/ElevenScreen";
 import Navbar from "./components/Navbar";
 import DetailScreen from "./src/screen/DetailScreen";
 import HistoryScreen from "./src/screen/HistoryScreen";
-import OrganizerRegisterScreen from "./src/screen/OrganizerRegisterScreen";
 import OrganizerFormScreen from "./src/screen/OrganizerFormScreen";
 import LoadingScreen from "./src/screen/LoadingScreen";
 import RegisterCompetitionScreen from "./src/screen/RegisterCompetitionScreen";
@@ -30,6 +29,9 @@ import NavbarO from "./src/Organizer/NavbarO";
 import LoadingPaymentScreen from "./src/screen/LoadingPaymentScreen";
 import RegisterFormMatchScreen from "./src/Organizer/RegisterFormMatchScreen";
 import ManagerOScreen from "./src/Organizer/ManagerOScreen";
+import RegisterFormMatchTwoScreen from "./src/Organizer/RegisterFormMatchTwoScreen";
+import RegisterFormMatchQRScreen from "./src/Organizer/RegisterFormMatchQRScreen";
+import LoadingPaymentOScreen from "./src/Organizer/LoadingPaymentOScreen";
 SplashScreen.preventAutoHideAsync();
 
 const Stack = createNativeStackNavigator();
@@ -121,11 +123,7 @@ export default function App() {
             component={HistoryScreen}
             options={{ headerShown: false }}
           />
-          <Stack.Screen
-            name="Organizer"
-            component={OrganizerRegisterScreen}
-            options={{ headerShown: false }}
-          />
+          
           <Stack.Screen
             name="Organizerform"
             component={OrganizerFormScreen}
@@ -176,6 +174,22 @@ export default function App() {
             component={ManagerOScreen}
             options={{ headerShown: false }}
           />
+          <Stack.Screen
+            name="RegisterFormMatchTwo"
+            component={RegisterFormMatchTwoScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="RegisterFormMatchQR"
+            component={RegisterFormMatchQRScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="LoadingPaymentOScreen"
+            component={LoadingPaymentOScreen}
+            options={{ headerShown: false }}
+          />
+
         </Stack.Navigator>
       </NavigationContainer>
     </View>

@@ -7,19 +7,32 @@ import {
   StyleSheet,
   Alert,
 } from "react-native";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../firebase"; // import auth จากไฟล์ firebase.js
 
 export default function RegisterScreen({ navigation }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
-  const handleLogin = () => {
-    if (!email || !password) {
-      Alert.alert("กรุณากรอกอีเมลและรหัสผ่าน");
+  const handleRegister = async () => {
+    if (!email || !password || !confirmPassword) {
+      Alert.alert("กรุณากรอกข้อมูลให้ครบถ้วน");
       return;
     }
 
-    Alert.alert("เข้าสู่ระบบสำเร็จ", `อีเมล: ${email}`);
-    navigation.replace("Home");
+    if (password !== confirmPassword) {
+      Alert.alert("รหัสผ่านไม่ตรงกัน");
+      return;
+    }
+
+    try {
+      await createUserWithEmailAndPassword(auth, email, password);
+      Alert.alert("สมัครบัญชีสำเร็จ");
+      navigation.replace("Home");
+    } catch (error) {
+      Alert.alert("เกิดข้อผิดพลาด", error.message);
+    }
   };
 
   return (
@@ -28,6 +41,7 @@ export default function RegisterScreen({ navigation }) {
         <Text style={styles.title1}>
           Create <Text style={styles.title2}>account</Text>
         </Text>
+
         <View style={styles.boxtextinput1}>
           <Text style={styles.titleinput}>อีเมล</Text>
           <TextInput
@@ -39,6 +53,7 @@ export default function RegisterScreen({ navigation }) {
             autoCapitalize="none"
           />
         </View>
+
         <View style={styles.boxtextinput2}>
           <Text style={styles.titleinput}>รหัสผ่าน</Text>
           <TextInput
@@ -49,18 +64,19 @@ export default function RegisterScreen({ navigation }) {
             secureTextEntry
           />
         </View>
+
         <View style={styles.boxtextinput3}>
           <Text style={styles.titleinput}>ยืนยันรหัสผ่าน</Text>
           <TextInput
             style={styles.input}
             placeholder="ยืนยันรหัสผ่าน"
-            value={password}
-            onChangeText={setPassword}
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
             secureTextEntry
           />
         </View>
 
-        <TouchableOpacity style={styles.button} onPress={handleLogin}>
+        <TouchableOpacity style={styles.button} onPress={handleRegister}>
           <Text style={styles.buttonText}>สมัครบัญชี</Text>
         </TouchableOpacity>
 
@@ -71,6 +87,8 @@ export default function RegisterScreen({ navigation }) {
     </View>
   );
 }
+
+// Styles เดิมของคุณ
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -108,7 +126,7 @@ const styles = StyleSheet.create({
     borderColor: "#ccc",
     padding: 18,
     borderRadius: 20,
-    marginBottom: 20,
+    marginBottom: 15,
     backgroundColor: "white",
     width: 335,
     fontFamily: "Kanit-SemiBold",
@@ -118,11 +136,10 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 20,
     alignItems: "center",
-    marginTop: 10,
+    marginTop: 30, // เดิม 10 → ให้ห่างจาก input ชัดขึ้น
     width: 335,
     height: 60,
     alignSelf: "center",
-    top: 60,
   },
   buttonText: {
     color: "#154127",
@@ -130,7 +147,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   loginText: {
-    marginTop: 110,
+    marginTop: 20, // เดิม 110 → ลดให้ใกล้ปุ่ม
     textAlign: "center",
     color: "#07F469",
     fontFamily: "Kanit-SemiBold",
@@ -143,13 +160,13 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: "Kanit-SemiBold",
   },
-  boxtextinput1: {
-    top: 30,
+ boxtextinput1: {
+    marginTop: 30, // ใช้ margin แทน top เพื่อไม่ดันองค์ประกอบอื่น
   },
   boxtextinput2: {
-    top: 40,
+    marginTop: 15,
   },
   boxtextinput3: {
-    top: 50,
+    marginTop: 15,
   },
 });

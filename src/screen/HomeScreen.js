@@ -1,13 +1,34 @@
-import React from "react";
-import { View, Text, StyleSheet, StatusBar } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, StyleSheet, StatusBar, ScrollView } from "react-native";
 import { Octicons } from "@expo/vector-icons";
-import ButtonGrid from "../../components/ButtonGrid";
 import HorizontalCard from "../../components/HorizontalCard";
+import ButtonGrid from "../../components/ButtonGrid";
+import { db } from "../../firebase";
+import { collection, getDocs } from "firebase/firestore";
+import { useNavigation } from "@react-navigation/native";
 
 const localImage = require("../../assets/f1.jpg");
 
-
 export default function HomeScreen() {
+  const [matches, setMatches] = useState([]);
+  const navigation = useNavigation();
+
+  useEffect(() => {
+    const fetchMatches = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, "matches"));
+        const matchesData = [];
+        querySnapshot.forEach((doc) => {
+          matchesData.push({ id: doc.id, ...doc.data() });
+        });
+        setMatches(matchesData);
+      } catch (error) {
+        console.log("Error fetching matches:", error);
+      }
+    };
+    fetchMatches();
+  }, []);
+
   const handlePress = (label) => {
     console.log("กดปุ่ม:", label);
   };
@@ -18,38 +39,40 @@ export default function HomeScreen() {
 
       <View style={styles.headerRow}>
         <Text style={styles.title1}>
-          Kick<Text style={styles.title2}>Macth</Text>
+          Kick<Text style={styles.title2}>Match</Text>
         </Text>
         <View style={styles.bellCircle}>
           <Octicons name="bell" size={17} color="#07F469" />
         </View>
       </View>
+
       <View style={{ marginTop: 10 }}>
         <ButtonGrid onPressButton={handlePress} />
       </View>
+
       <View style={styles.boxtitle}>
         <Text style={styles.title}>รายการแข่งที่แนะนำ</Text>
       </View>
-      <View style={{ marginTop: 15 }}>
-  <HorizontalCard
-    image={localImage}
-    title="อาทิ7ชาลเลนจ์คัพ2024"
-    subtitle="ประเภท :  7 คน | ประชาชน"
-    onPress={() => console.log("ไปยังรายละเอียด")}
-  />
-  <HorizontalCard
-    image={localImage}
-    title="อาทิ7ชาลเลนจ์คัพ2024"
-    subtitle="ประเภท :  7 คน | ประชาชน"
-    onPress={() => console.log("ไปยังรายละเอียด")}
-  />
-  <HorizontalCard
-    image={localImage}
-    title="อาทิ7ชาลเลนจ์คัพ2024"
-    subtitle="ประเภท :  7 คน | ประชาชน"
-    onPress={() => console.log("ไปยังรายละเอียด")}
-  />
-</View>
+
+      <ScrollView
+        style={{ marginTop: 15 }}
+        contentContainerStyle={{ paddingBottom: 100 }}
+        showsVerticalScrollIndicator={false}
+      >
+        {matches.length === 0 ? (
+          <Text style={{ color: "#ccc", textAlign: "center", marginTop: 20 }}>
+            ยังไม่มีรายการแข่งขัน
+          </Text>
+        ) : (
+          matches.map((match) => (
+            <HorizontalCard
+              key={match.id}
+              match={match} // ✅ ส่ง match ทั้ง object
+              isRegistered={false}
+            />
+          ))
+        )}
+      </ScrollView>
     </View>
   );
 }
@@ -82,7 +105,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-    boxtitle: {
+  boxtitle: {
     backgroundColor: "#202020",
     paddingVertical: 6,
     paddingHorizontal: 12,
@@ -95,5 +118,4 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: "Kanit-SemiBold",
   },
-
 });

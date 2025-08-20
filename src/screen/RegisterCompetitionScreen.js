@@ -8,15 +8,20 @@ import {
   TextInput,
   Image,
   ScrollView,
+  Alert,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { FormLine } from "../../components/icon/FormLine";
 import * as ImagePicker from "expo-image-picker";
+import { db } from "../../firebase";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 export default function RegisterCompetitionScreen() {
   const navigation = useNavigation();
+  const route = useRoute();
+  const { match } = route.params || {};
 
   const [teamName, setTeamName] = useState("");
   const [teamColor, setTeamColor] = useState("");
@@ -30,9 +35,7 @@ export default function RegisterCompetitionScreen() {
       allowsEditing: true,
       quality: 0.7,
     });
-    if (!result.canceled) {
-      setTeamLogo(result.assets[0].uri);
-    }
+    if (!result.canceled) setTeamLogo(result.assets[0].uri);
   };
 
   const pickStaffImage = async (index) => {
@@ -54,11 +57,51 @@ export default function RegisterCompetitionScreen() {
     setStaffNames(newNames);
   };
 
+  const handleSubmit = async () => {
+    if (!teamName || !teamColor) {
+      Alert.alert("แจ้งเตือน", "กรุณากรอกชื่อทีมและสีเสื้อให้ครบ");
+      return;
+    }
+
+    try {
+      const docRef = await addDoc(collection(db, "registrations"), {
+        matchId: match?.id || "",
+        matchName: match?.fullname || "",
+        teamName,
+        teamColor,
+        teamLogo,
+        staff: staffNames.map((name, index) => ({
+  name: name.trim() || "ไม่ระบุชื่อ",
+  image: staffImages[index] || null,
+})),
+
+        createdAt: serverTimestamp(),
+      });
+
+     navigation.navigate("PlayerRegistration", {
+  match,
+  teamId: docRef.id,
+  teamData: { 
+    teamName, 
+    teamColor, 
+    teamLogo,
+    staff: staffNames.map((name, index) => ({
+      name: name.trim() || "ไม่ระบุชื่อ",
+      image: staffImages[index] || null,
+    })), // ✅ เพิ่มตรงนี้
+  },
+});
+
+    } catch (error) {
+      console.log(error);
+      Alert.alert("ผิดพลาด", "เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+    }
+  };
+
   return (
     <View style={styles.container}>
       <StatusBar backgroundColor="#07F469" barStyle="light-content" />
 
-      {/* Header */}
       <LinearGradient
         colors={["#14141400", "#03C252"]}
         style={styles.headerBox}
@@ -71,19 +114,19 @@ export default function RegisterCompetitionScreen() {
           </TouchableOpacity>
           <View style={styles.textBox}>
             <Text style={styles.titleText}>ลงสมัครแข่ง</Text>
-            <Text style={styles.subTitleText}>อาทิ7ชาลเลนจ์คัพ2024</Text>
+            <Text style={styles.subTitleText}>
+              {match?.fullname || "ไม่มีชื่อรายการ"}
+            </Text>
           </View>
           <FormLine size={50} color="#fff" />
         </View>
       </LinearGradient>
 
-      {/* Scrollable Content */}
-      <View
+      <ScrollView
         style={styles.scrollContent}
         contentContainerStyle={{ paddingBottom: 160 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* โลโก้ทีม */}
         <Text style={styles.label}>โลโก้ทีม</Text>
         <View style={styles.logoRow}>
           <TouchableOpacity style={styles.logoBox} onPress={pickImage}>
@@ -95,23 +138,17 @@ export default function RegisterCompetitionScreen() {
           </TouchableOpacity>
           <View style={styles.teamInfoBox}>
             <Text style={styles.infoLabel}>ชื่อทีม:</Text>
-           <TextInput
-              style={[
-                styles.input,
-                { marginTop: 5, height: 35, paddingLeft: 12 },
-              ]}
-              placeholder="เช่น น้ำเงิน, ดำ-แดง"
+            <TextInput
+              style={styles.input}
+              placeholder="ใส่ชื่อทีม"
               placeholderTextColor="#aaa"
-              value={teamColor}
-              onChangeText={setTeamColor}
+              value={teamName}
+              onChangeText={setTeamName}
             />
             <Text style={styles.infoLabel}>สีเสื้อ:</Text>
             <TextInput
-              style={[
-                styles.input,
-                { marginTop: 5, height: 35, paddingLeft: 12 },
-              ]}
-              placeholder="เช่น น้ำเงิน, ดำ-แดง"
+              style={styles.input}
+              placeholder="ใส่สีเสื้อ"
               placeholderTextColor="#aaa"
               value={teamColor}
               onChangeText={setTeamColor}
@@ -119,7 +156,6 @@ export default function RegisterCompetitionScreen() {
           </View>
         </View>
 
-        {/* สตาฟโค้ด */}
         <Text style={styles.label}>สตาฟโค้ด</Text>
         <View style={styles.staffRow}>
           {staffImages.map((imgUri, index) => (
@@ -150,19 +186,16 @@ export default function RegisterCompetitionScreen() {
             </View>
           ))}
         </View>
-      </View>
+      </ScrollView>
 
-      {/* Footer: หมายเหตุ + ปุ่ม */}
+      {/* Footer */}
       <View style={styles.footer}>
         <View style={styles.boxwarning}>
           <Text style={styles.boxWarningText}>
             * กรุณาตรวจสอบข้อมูลให้ครบถ้วนก่อนกด "ดำเนินการต่อ"
           </Text>
         </View>
-        <TouchableOpacity
-          style={styles.submitButton}
-          onPress={() => navigation.navigate("PlayerRegistration")}
-        >
+        <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
           <Text style={styles.submitButtonText}>ดำเนินการต่อ</Text>
         </TouchableOpacity>
       </View>
@@ -177,9 +210,7 @@ const styles = StyleSheet.create({
     paddingTop: 55,
     paddingHorizontal: 15,
   },
-  scrollContent: {
-    flex: 1,
-  },
+  scrollContent: { flex: 1 },
   headerBox: {
     width: "100%",
     height: 80,
@@ -192,21 +223,9 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
-  textBox: {
-    flex: 1,
-    alignItems: "flex-end",
-    marginEnd: 10,
-  },
-  titleText: {
-    color: "#fff",
-    fontSize: 13,
-    fontFamily: "Kanit-SemiBold",
-  },
-  subTitleText: {
-    color: "#fff",
-    fontSize: 13,
-    fontFamily: "Kanit-SemiBold",
-  },
+  textBox: { flex: 1, alignItems: "flex-end", marginEnd: 10 },
+  titleText: { color: "#fff", fontSize: 13, fontFamily: "Kanit-SemiBold" },
+  subTitleText: { color: "#fff", fontSize: 13, fontFamily: "Kanit-SemiBold" },
   label: {
     color: "#07F469",
     fontSize: 13,
@@ -219,17 +238,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#07F469",
     color: "#141414",
-    borderRadius: 20,
-    alignContent: "center",
-    justifyContent: "center",
+    borderRadius: 15,
     width: "100%",
+    height: 35,
+    paddingLeft: 10,
     fontFamily: "Kanit-Regular",
   },
-  logoRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    bottom: 10,
-  },
+  logoRow: { flexDirection: "row", alignItems: "center", bottom: 10 },
   logoBox: {
     width: 100,
     height: 135,
@@ -241,21 +256,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  logoImage: {
-    width: "100%",
-    height: "100%",
-    borderRadius: 15,
-  },
+  logoImage: { width: "100%", height: "100%", borderRadius: 15 },
   logoText: {
     color: "#aaa",
     textAlign: "center",
     fontFamily: "Kanit-Regular",
     fontSize: 10,
   },
-  teamInfoBox: {
-    flex: 1,
-    marginLeft: 15,
-  },
+  teamInfoBox: { flex: 1, marginLeft: 15 },
   infoLabel: {
     fontFamily: "Kanit-SemiBold",
     color: "#07F469",
@@ -267,10 +275,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginTop: 10,
   },
-  staffBox: {
-    alignItems: "center",
-    width: "30%",
-  },
+  staffBox: { alignSelf: "center", width: "34%" },
   staffImagePlaceholder: {
     width: 110,
     height: 125,

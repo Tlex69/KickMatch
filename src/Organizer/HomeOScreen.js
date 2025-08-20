@@ -1,73 +1,98 @@
-import React from "react";
-import { View, Text, StyleSheet, StatusBar } from "react-native";
-import { Octicons } from "@expo/vector-icons";
-import ButtonGrid from "../../components/ButtonGrid";
-import HorizontalOCard from "./HorizontalOCard";
-const localImage = require("../../assets/f1.jpg");
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  StatusBar,
+  ScrollView,
+} from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { useNavigation } from "@react-navigation/native";
+import { ViewGridDetail2 } from "../../components/icon/ViewGridDetail2";
+import { DocFail } from "../../components/icon/DocFail";
+import HorizontalOCard from "../../components/HorizontalCard"; 
+import { db } from "../../firebase";
+import { collection, getDocs } from "firebase/firestore";
 
-export default function HomeOScreen({ route }) {
-  // รับแพ็คจาก params มาแสดงใต้ KickMatch
-  const { plan } = route.params || {};
+export default function CompetitionlistScreen() {
+  const navigation = useNavigation();
+  const [competitions, setCompetitions] = useState([]);
 
-  const handlePress = (label) => {
-    console.log("กดปุ่ม:", label);
-  };
+  useEffect(() => {
+    const fetchCompetitions = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, "matches"));
+        const allMatches = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const successMatches = allMatches.filter(match => match.status === "success");
+        setCompetitions(successMatches);
+      } catch (error) {
+        console.log("Error fetching competitions:", error);
+      }
+    };
+
+    fetchCompetitions();
+  }, []);
 
   return (
     <View style={styles.container}>
       <StatusBar backgroundColor="#07F469" barStyle="light-content" />
 
-      <View style={styles.headerRow}>
-        <View style={{ flexDirection: "row", alignItems: "center" }}>
-          <Text style={styles.title1}>
-            Kick<Text style={styles.title2}>Match</Text>
-          </Text>
-
-          <View style={styles.planBadge}>
-            <Text style={styles.planText}>ฝ่ายจัด</Text>
+      {/* Header */}
+      <LinearGradient
+        colors={["#14141400", "#03C252"]}
+        style={styles.headerBox}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+      >
+        <View style={styles.headerContent}>
+          <View style={styles.textBox}>
+            <Text style={styles.titleText}>รายการแข่งขัน</Text>
+            <Text style={styles.subTitleText}>รายการแข่งขันที่คุณสมัคร</Text>
           </View>
+          <ViewGridDetail2 size={45} color="#fff" />
         </View>
-        <View style={styles.bellCircle}>
-          <Octicons name="bell" size={17} color="#07F469" />
-        </View>
-      </View>
+      </LinearGradient>
 
-     
-
-      <View style={{ marginTop: 15 }}>
-      
-
-      </View>
-      <View style={styles.boxtitle}>
-        <Text style={styles.title}>รายชื่อทีมที่ส่งสมัคร</Text>
-      </View>
-
-      <View style={{ marginTop: 15 }}>
-        <HorizontalOCard
-          image={localImage}
-          title="อาทิตย์7ชาเลนจ์คัพ2024"
-          subtitle="ประเภท : 7 คน | ประชาชน"
-          isRegistered={true}
-          totalTeams={7}
-          maxTeams={16}
-          statusText="กำลังแข่งขัน"
-          teamStatusText=""
-          statusColor="#FF4C4C"
-          onPress={() => console.log("ไปยังรายละเอียด")}
-        />
-        <HorizontalOCard
-          image={localImage}
-          title="สายสัมพันธ์ 789"
-          subtitle="ประเภท : 7 คน | ประชาชน"
-          isRegistered={true}
-          totalTeams={1}
-          maxTeams={16}
-          statusText="เปิดรับสมัครอยู่"
-          teamStatusText="สมัครแล้ว 1/16 ทีม"
-          statusColor="#07F469"
-          onPress={() => console.log("ไปยังรายละเอียด")}
-        />
-      </View>
+      <ScrollView
+        style={styles.scrollContainer}
+        contentContainerStyle={
+          competitions.length === 0 && styles.emptyContainer
+        }
+        showsVerticalScrollIndicator={false}
+      >
+        {competitions.length === 0 ? (
+          <View style={styles.emptyContent}>
+            <DocFail width={110} height={120} fill="#141414" />
+            <Text style={styles.emptyText}>ยังไม่มีรายการ</Text>
+          </View>
+        ) : (
+          competitions.map((comp) => (
+            <HorizontalOCard
+              key={comp.id}
+              image={
+                comp?.promoImageBase64
+                  ? { uri: `data:image/jpeg;base64,${comp.promoImageBase64}` }
+                  : comp?.promoImage
+                  ? { uri: comp.promoImage }
+                  : require("../../assets/f1.jpg")
+              }
+              title={comp?.fullname || "ไม่มีชื่อ"}
+              subtitle={`ประเภท: ${comp?.category2 || "-"}`}
+              isRegistered={true}
+              totalTeams={comp?.totalTeams || 0}
+              maxTeams={comp?.maxTeams || 16}
+              statusText={comp?.status || "เปิดรับสมัครอยู่"}
+              teamStatusText={`สมัครแล้ว ${comp?.totalTeams || 0}/${
+                comp?.maxTeams || 16
+              } ทีม`}
+              statusColor={comp?.statusColor || "#07F469"}
+              onPress={() =>
+                navigation.navigate("CompetitionDetail", { compId: comp.id })
+              }
+            />
+          ))
+        )}
+      </ScrollView>
     </View>
   );
 }
@@ -77,65 +102,53 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#141414",
     paddingTop: 55,
-    paddingHorizontal: 25,
+    paddingHorizontal: 15,
   },
-  headerRow: {
+  headerBox: {
+    width: "100%",
+    height: 80,
+    borderRadius: 20,
+    paddingHorizontal: 15,
+    justifyContent: "center",
+  },
+  headerContent: {
     flexDirection: "row",
-    alignItems: "center",
     justifyContent: "space-between",
+    alignItems: "center",
   },
-  title1: {
+  textBox: {
+    flex: 1,
+    alignItems: "flex-end",
+    marginEnd: 10,
+  },
+  titleText: {
     color: "#fff",
-    fontSize: 21,
-    fontFamily: "MuseoModerno-Bold",
-  },
-  planBox: {
-    color: "#07F469",
-    backgroundColor: "#154127",
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    fontSize: 16,
+    fontSize: 14,
     fontFamily: "Kanit-SemiBold",
   },
-  bellCircle: {
-    width: 33,
-    height: 33,
-    borderRadius: 20,
-    backgroundColor: "#154127",
+  subTitleText: {
+    color: "#fff",
+    fontSize: 14,
+    fontFamily: "Kanit-SemiBold",
+  },
+  scrollContainer: {
+    marginTop: 15,
+    width: "100%",
+  },
+  emptyContainer: {
+    flexGrow: 1,
     justifyContent: "center",
     alignItems: "center",
   },
-  boxtitle: {
-    backgroundColor: "#202020",
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 15,
-    marginTop: 20,
-    alignSelf: "flex-start",
-  },
-  title: {
-    color: "#07F469",
-    fontSize: 13,
-    fontFamily: "Kanit-SemiBold",
-  },
-  title2: {
-    color: "#07F469",
-  },
-  planBadge: {
-    marginLeft: 5,
-    backgroundColor: "#DBB924",
-    width: 40,
-    height: 15,
-    borderRadius: 10,
-    alignSelf: "center",
+  emptyContent: {
+    justifyContent: "center",
     alignItems: "center",
-    marginTop: 5,
+    marginBottom: 200,
   },
-  planText: {
-    color: "#fff",
-    fontSize: 8,
+  emptyText: {
+    color: "#383838",
+    fontSize: 14,
+    marginTop: 10,
     fontFamily: "Kanit-SemiBold",
-    marginTop: 1,
   },
-  
 });

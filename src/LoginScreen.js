@@ -7,25 +7,35 @@ import {
   StyleSheet,
   Alert,
 } from "react-native";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../firebase"; // ดึง auth จาก firebase.js
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!email || !password) {
       Alert.alert("กรุณากรอกอีเมลและรหัสผ่าน");
       return;
     }
 
-    Alert.alert("เข้าสู่ระบบสำเร็จ", `อีเมล: ${email}`);
-    navigation.replace("Home"); 
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      Alert.alert("เข้าสู่ระบบสำเร็จ", `ยินดีต้อนรับ: ${email}`);
+      navigation.replace("Home");
+    } catch (error) {
+      Alert.alert("เกิดข้อผิดพลาด", error.message);
+    }
   };
 
   return (
     <View style={styles.container}>
       <View style={styles.box}>
-        <Text style={styles.title1}>Login <Text style={styles.title2}>here</Text></Text>
+        <Text style={styles.title1}>
+          Login <Text style={styles.title2}>here</Text>
+        </Text>
+
         <View style={styles.boxtextinput1}>
           <Text style={styles.titleinput}>อีเมล</Text>
           <TextInput
@@ -37,6 +47,7 @@ export default function LoginScreen({ navigation }) {
             autoCapitalize="none"
           />
         </View>
+
         <View style={styles.boxtextinput2}>
           <Text style={styles.titleinput}>รหัสผ่าน</Text>
           <TextInput
@@ -47,10 +58,11 @@ export default function LoginScreen({ navigation }) {
             secureTextEntry
           />
         </View>
-          <Text style={styles.forgot}>ลืมรหัสผ่าน?</Text>
 
-<TouchableOpacity style={styles.button} onPress={handleLogin}>
-            <Text style={styles.buttonText}>เข้าสู่ระบบ</Text>
+        <Text style={styles.forgot}>ลืมรหัสผ่าน?</Text>
+
+        <TouchableOpacity style={styles.button} onPress={handleLogin}>
+          <Text style={styles.buttonText}>เข้าสู่ระบบ</Text>
         </TouchableOpacity>
 
         <TouchableOpacity onPress={() => navigation.navigate("Register")}>
@@ -60,6 +72,8 @@ export default function LoginScreen({ navigation }) {
     </View>
   );
 }
+
+// Styles เดิมของคุณ (คงไว้)
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -105,29 +119,28 @@ const styles = StyleSheet.create({
     fontFamily : 'Kanit-Regular'
   },
   button: {
-  backgroundColor: "#07F469",
-  padding: 15,
-  borderRadius: 20,
-  alignItems: "center",
-  marginTop: 120,
-  width: 335,
-  height: 55,
-  alignSelf: "center",
-},
-
+    backgroundColor: "#07F469",
+    padding: 15,
+    borderRadius: 20,
+    alignItems: "center",
+    marginTop: 120,
+    width: 335,
+    height: 55,
+    alignSelf: "center",
+  },
   buttonText: {
     color: "#154127",
     fontFamily: 'Kanit-SemiBold',
-    fontSize: 17,marginBottom: -2,
+    fontSize: 17,
+    marginBottom: -2,
   },
   registerText: {
-  marginTop: 30, 
-  textAlign: "center",
-  color: "#07F469",
-  fontFamily:'Kanit-SemiBold',
-  fontSize: 12,
-},
-
+    marginTop: 30, 
+    textAlign: "center",
+    color: "#07F469",
+    fontFamily:'Kanit-SemiBold',
+    fontSize: 12,
+  },
   titleinput: {
     color: "#07F469",
     left: 30,
@@ -136,10 +149,10 @@ const styles = StyleSheet.create({
     fontFamily:'Kanit-SemiBold'
   },
   boxtextinput1:{
-  top: 70
+    top: 70
   },
   boxtextinput2:{
-  top: 80
+    top: 80
   },
   forgot: {
     top: 80,

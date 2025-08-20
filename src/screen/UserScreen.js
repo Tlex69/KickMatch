@@ -97,7 +97,7 @@ export default function UserScreen() {
                 color="#07F469"
               />
             }
-            onPress={() => navigation.navigate("Organizerform")}
+            onPress={() => navigation.navigate("HomeO")}
           />
           <OptionItem
              label="ผู้ช่วยในการแข่งขัน"

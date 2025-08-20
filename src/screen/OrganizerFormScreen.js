@@ -15,8 +15,13 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { Edit2 } from "../../components/icon/Edit2";
 
+import { auth, db, storage } from "../../firebase";
+import { doc, setDoc, updateDoc } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+
 export default function OrganizerFormScreen({ route, navigation }) {
-  const { plan } = route.params || {};
+  const { plan: routePlan } = route.params || {};
+  const plan = routePlan || "basic"; // ค่า default เป็น "basic"
 
   const [fullname, setFullname] = useState("");
   const [idCard, setIdCard] = useState("");
@@ -24,6 +29,7 @@ export default function OrganizerFormScreen({ route, navigation }) {
   const [note, setNote] = useState("");
   const [slipImage, setSlipImage] = useState(null);
 
+  // เลือกรูปสลิป
   const handlePickSlip = async () => {
     const permissionResult =
       await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -40,26 +46,63 @@ export default function OrganizerFormScreen({ route, navigation }) {
     if (!pickerResult.canceled) {
       setSlipImage(pickerResult.assets[0].uri);
     }
-
   };
 
-  const handleSubmit = () => {
-  if (!fullname || !idCard || !phone) {
-    Alert.alert("กรุณากรอกข้อมูลให้ครบถ้วน");
-    return;
-  }
+  // อัปโหลดสลิปไป Storage
+  const uploadSlipToStorage = async (uri, userId) => {
+    const response = await fetch(uri);
+    const blob = await response.blob();
+    const storageRef = ref(storage, `slips/${userId}.jpg`);
+    await uploadBytes(storageRef, blob);
+    const downloadURL = await getDownloadURL(storageRef);
+    return downloadURL;
+  };
 
-  if (plan === "advanced" && !slipImage) {
-    Alert.alert("กรุณาแนบสลิปการโอนเงิน");
-    return;
-  }
+  // ส่งฟอร์ม
+  const handleSubmit = async () => {
+    if (!fullname || !idCard || !phone) {
+      Alert.alert("กรุณากรอกข้อมูลให้ครบถ้วน");
+      return;
+    }
 
-  // ไปหน้าโหลด
-  navigation.navigate("Loading");
+    if (plan === "advanced" && !slipImage) {
+      Alert.alert("กรุณาแนบสลิปการโอนเงิน");
+      return;
+    }
 
-  
-};
+    try {
+      const userId = auth.currentUser.uid;
 
+      let slipURL = null;
+      if (slipImage) {
+        slipURL = await uploadSlipToStorage(slipImage, userId);
+      }
+
+      // บันทึกข้อมูล Organizer
+      await setDoc(doc(db, "organizers", userId), {
+        fullname,
+        idCard,
+        phone,
+        note,
+        slipImage: slipURL,
+        plan,
+        status: "pending",
+        createdAt: new Date(),
+      });
+
+      // เปลี่ยน role ของผู้ใช้
+      await updateDoc(doc(db, "users", userId), {
+        role: "organizer",
+      });
+
+      Alert.alert("สมัครสำเร็จ", "รอการอนุมัติจากผู้ดูแลระบบ");
+      navigation.navigate("Loading");
+
+    } catch (error) {
+      console.log(error);
+      Alert.alert("เกิดข้อผิดพลาด", error.message);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -158,6 +201,10 @@ export default function OrganizerFormScreen({ route, navigation }) {
     </View>
   );
 }
+
+// styles เหมือนเดิม
+
+// styles เหมือนเดิม
 
 const styles = StyleSheet.create({
   container: {

@@ -9,47 +9,63 @@ import {
   ScrollView,
   Alert,
 } from "react-native";
-import * as ImagePicker from "expo-image-picker";
 import { MaterialIcons, Feather } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { FormLine } from "../../components/icon/FormLine";
+import * as ImagePicker from "expo-image-picker";
+import { doc, updateDoc, Timestamp } from "firebase/firestore";
+import { db } from "../../firebase"; 
 
 export default function PaymentScreen() {
   const navigation = useNavigation();
+  const route = useRoute();
+  const { match, teamId, teamData, players } = route.params || {};
+  const staff = teamData?.staff || [];
+
   const [slipImage, setSlipImage] = useState(null);
 
-  // ฟังก์ชันเลือกภาพสลิป
   const pickImage = async () => {
-    try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== "granted") {
-        Alert.alert("Permission required", "Please allow access to your photos.");
-        return;
-      }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        quality: 1,
-      });
-
-      if (!result.canceled) {
-        setSlipImage(result.assets[0].uri);
-      }
-    } catch (error) {
-      console.log("Error picking image: ", error);
-    }
-  };
-
-  // ฟังก์ชันกดยืนยัน
-  const onConfirm = () => {
-    if (!slipImage) {
-      Alert.alert("แจ้งเตือน", "กรุณาแนบสลิปก่อนยืนยันการชำระเงิน");
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission required", "Please allow access to your photos.");
       return;
     }
-    Alert.alert("สำเร็จ", "ยืนยันการชำระเงินเรียบร้อยแล้ว");
-    // ทำงานต่อ เช่น ส่งข้อมูลไป server
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 1,
+    });
+    if (!result.canceled) setSlipImage(result.assets[0].uri);
   };
+
+  const onConfirm = async () => {
+  try {
+    if (!teamId) throw new Error("teamId ไม่ถูกต้อง");
+
+    const teamRef = doc(db, "teams", teamId);
+    await updateDoc(teamRef, {
+      paymentStatus: "success", // อัปเดตว่าสำเร็จ
+      paymentDate: Timestamp.fromDate(new Date()), // วันเวลาปัจจุบัน
+    });
+
+    Alert.alert("สำเร็จ", "ยืนยันการชำระเงินเรียบร้อยแล้ว");
+
+    // ไปหน้า LoadingScreen
+    navigation.replace("LoadingPayment", {
+      teamName: teamData?.teamName,
+      matchName: match?.fullname,
+      teamId,
+      matchId: match?.id,
+    });
+  } catch (error) {
+    console.error("Payment update error:", error);
+    Alert.alert("ผิดพลาด", "ไม่สามารถอัปเดตสถานะได้");
+  }
+};
+
+
+  const qrCodeUri = match?.qrCode || null;
+  const price = match?.price || null;
 
   return (
     <View style={styles.container}>
@@ -68,7 +84,9 @@ export default function PaymentScreen() {
           </TouchableOpacity>
           <View style={styles.textBox}>
             <Text style={styles.titleText}>ชำระค่าสมัคร</Text>
-            <Text style={styles.subTitleText}>อาทิ7ชาลเลนจ์คัพ2024</Text>
+            <Text style={styles.subTitleText}>
+              {match?.fullname || "ไม่มีชื่อรายการ"}
+            </Text>
           </View>
           <FormLine size={50} color="#fff" />
         </View>
@@ -82,33 +100,49 @@ export default function PaymentScreen() {
         <View style={styles.teamRow}>
           <View style={{ flex: 1 }}>
             <Text style={styles.labelfirstT}>
-              ชื่อทีม : <Text style={styles.labelfirstTsub}>อีโก้ เอฟซี</Text>
+              ชื่อทีม :{" "}
+              <Text style={styles.labelfirstTsub}>
+                {teamData?.teamName || "-"}
+              </Text>
             </Text>
             <Text style={styles.labelfirstT}>
-              สีเสื้อของทีม : <Text style={styles.labelfirstTsub}>เหลือง-ดำ</Text>
+              สีเสื้อของทีม :{" "}
+              <Text style={styles.labelfirstTsub}>
+                {teamData?.teamColor || "-"}
+              </Text>
             </Text>
           </View>
 
           <View style={styles.logoBox}>
             <Text style={styles.labelfirstT}>โลโก้ทีม : </Text>
-            <Image
-              source={{
-                uri: "https://static.vecteezy.com/system/resources/previews/011/049/345/non_2x/soccer-football-badge-logo-sport-team-identity-illustrations-isolated-on-white-background-vector.jpg",
-              }}
-              style={styles.logo}
-            />
+            {teamData?.teamLogo ? (
+              <Image source={{ uri: teamData.teamLogo }} style={styles.logo} />
+            ) : (
+              <View style={[styles.logo, { backgroundColor: "#1a1a1a" }]} />
+            )}
           </View>
         </View>
 
-        {/* ปุ่มเช็ครายชื่อ */}
-        <TouchableOpacity style={styles.listplayer} onPress={() => navigation.navigate("ListPlayer")}>
+        <TouchableOpacity
+          style={styles.listplayer}
+          onPress={() =>
+            navigation.navigate("ListPlayer", {
+              players,
+              staff,
+              teamName: teamData?.teamName,
+              matchName: match?.fullname || "การแข่งขัน",
+            })
+          }
+        >
           <View style={styles.listplayerContent}>
-            <Text style={styles.listplayerText}>เช็ครายชื่อสมาชิกในทีม</Text>
+            <Text style={styles.listplayerText}>
+              เช็ครายชื่อสมาชิกในทีม
+            </Text>
             <Feather name="chevron-right" size={26} color="#07F469" />
           </View>
         </TouchableOpacity>
 
-        {/* กล่องข้อมูล QR และการแนปสลิป */}
+        {/* กล่องข้อมูล QR และสลิป */}
         <LinearGradient
           colors={["#003AAE", "#192132"]}
           start={{ x: 0, y: 0 }}
@@ -119,15 +153,28 @@ export default function PaymentScreen() {
             <Text style={styles.title}>การชำระค่าสมัคร</Text>
           </View>
 
-          <Image
-            source={{
-              uri: "https://www.101servizi.com/wp-content/uploads/2020/07/QRCodeArticolo.jpg",
-            }}
-            style={styles.QrCodeImage}
-          />
+          {qrCodeUri ? (
+            <Image
+              source={{ uri: qrCodeUri }}
+              style={{
+                width: 200,
+                height: 200,
+                alignSelf: "center",
+                marginVertical: 15,
+                borderRadius: 10,
+              }}
+            />
+          ) : (
+            <Text
+              style={{ color: "#fff", textAlign: "center", marginVertical: 15 }}
+            >
+              QR Code ยังไม่ถูกสร้าง
+            </Text>
+          )}
 
           <Text style={styles.title}>
-            ค่าสมัครต่อทีม : <Text style={styles.price}>10,000 บาท</Text>
+            ค่าสมัครต่อทีม :{" "}
+            <Text style={styles.price}>{match?.price || "???"} บาท</Text>
           </Text>
 
           <TouchableOpacity style={styles.buttonslip} onPress={pickImage}>
@@ -152,12 +199,8 @@ export default function PaymentScreen() {
           </Text>
         </View>
         <TouchableOpacity
-          style={[
-            styles.submitButton,
-            { backgroundColor: slipImage ? "#07F469" : "#666666" },
-          ]}
-          onPress={() => navigation.navigate("LoadingPayment")}
-          disabled={!slipImage}
+          style={[styles.submitButton, { backgroundColor: "#07F469" }]}
+          onPress={onConfirm}
         >
           <Text style={styles.submitButtonText}>ยืนยันการชำระเงิน</Text>
         </TouchableOpacity>
@@ -166,6 +209,8 @@ export default function PaymentScreen() {
   );
 }
 
+
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -173,9 +218,7 @@ const styles = StyleSheet.create({
     paddingTop: 55,
     paddingHorizontal: 15,
   },
-  scrollContent: {
-    paddingBottom: 180,
-  },
+  scrollContent: { paddingBottom: 180 },
   headerBox: {
     width: "100%",
     height: 80,
@@ -189,21 +232,9 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
-  textBox: {
-    flex: 1,
-    alignItems: "flex-end",
-    marginEnd: 10,
-  },
-  titleText: {
-    color: "#fff",
-    fontSize: 13,
-    fontFamily: "Kanit-SemiBold",
-  },
-  subTitleText: {
-    color: "#fff",
-    fontSize: 13,
-    fontFamily: "Kanit-SemiBold",
-  },
+  textBox: { flex: 1, alignItems: "flex-end", marginEnd: 10 },
+  titleText: { color: "#fff", fontSize: 13, fontFamily: "Kanit-SemiBold" },
+  subTitleText: { color: "#fff", fontSize: 13, fontFamily: "Kanit-SemiBold" },
   teamRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -217,11 +248,7 @@ const styles = StyleSheet.create({
     fontFamily: "Kanit-SemiBold",
     marginBottom: 18,
   },
-  labelfirstTsub: {
-    color: "#fff",
-    fontSize: 13,
-    fontFamily: "Kanit-SemiBold",
-  },
+  labelfirstTsub: { color: "#fff", fontSize: 13, fontFamily: "Kanit-SemiBold" },
   logoBox: {
     flexDirection: "row",
     alignItems: "flex-start",
@@ -247,37 +274,50 @@ const styles = StyleSheet.create({
     width: "100%",
     height: 45,
     backgroundColor: "#202020",
-    borderRadius: 15,
-    marginTop: 5,
+    borderRadius: 10,
+    justifyContent: "center",
+    marginBottom: 15,
   },
   listplayerContent: {
     flexDirection: "row",
-    alignItems: "center",
     justifyContent: "space-between",
-    height: "100%",
-    paddingHorizontal: 15,
+    alignItems: "center",
+    paddingHorizontal: 12,
   },
   listplayerText: {
     color: "#07F469",
-    fontSize: 14,
     fontFamily: "Kanit-SemiBold",
+    fontSize: 13,
   },
-  infoBox: {
-    width: "100%",
-    flexGrow: 0,
+  infoBox: { padding: 12, borderRadius: 15, marginBottom: -100 },
+  boxtitle: { marginBottom: 12 },
+  title: { fontSize: 15, color: "#07F469", fontFamily: "Kanit-SemiBold", alignSelf: "center" },
+  price: { color: "#fff", fontSize: 15, fontFamily: "Kanit-Regular" },
+  buttonslip: {
+    height: 40,
+    backgroundColor: "#154127",
     borderRadius: 15,
-    padding: 12,
-    marginTop: 12,
+    justifyContent: "center",
+    marginTop: 15,
+  },
+  slipContent: {
+    flexDirection: "row",
+    justifyContent: "center",
     alignItems: "center",
   },
-  footer: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 15,
-    backgroundColor: "#141414",
+  slipplayerText: {
+    color: "#07F469",
+    fontSize: 13,
+    fontFamily: "Kanit-Regular",
   },
+  slipPreview: { 
+  width: "100%",        
+  height: 300,        
+  borderRadius: 10,     
+  marginTop: 15,        
+  resizeMode: "contain",
+},
+
   boxwarning: {
     backgroundColor: "#1D1D1D",
     borderColor: "#FFCC00",
@@ -298,57 +338,13 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 20,
   },
   submitButtonText: {
     color: "#141414",
     fontSize: 16,
     fontFamily: "Kanit-SemiBold",
   },
-  boxtitle: {
-    backgroundColor: "#202020",
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 15,
-    marginTop: 2,
-    alignSelf: "center",
-  },
-  title: {
-    color: "#07F469",
-    fontSize: 13,
-    fontFamily: "Kanit-SemiBold",
-  },
-  price: {
-    color: "#fff",
-    fontSize: 13,
-    fontFamily: "Kanit-SemiBold",
-    fontWeight: "bold",
-  },
-  buttonslip: {
-    width: 125,
-    height: 30,
-    backgroundColor: "#07F469",
-    borderRadius: 15,
-    marginTop: 15,
-    justifyContent: "center",
-  },
-  slipContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    height: "100%",
-  },
-  slipplayerText: {
-    color: "#154127",
-    fontSize: 13,
-    fontFamily: "Kanit-SemiBold",
-  },
-  slipPreview: {
-    width: 200,
-    height: 250,
-    marginTop: 15,
-    marginBottom: 15,
-    borderRadius: 10,
-    alignSelf: "center",
+  footer: {
+ bottom: 25,
   },
 });

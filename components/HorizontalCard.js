@@ -3,12 +3,8 @@ import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 
 export default function HorizontalCard({
-  image,
-  title,
-  subtitle,
+  match = {}, // ✅ default เป็น object ว่าง
   isRegistered = false,
-  totalTeams = 12,
-  maxTeams = 14,
   borderColor = '#07F469',
   buttonColor = '#154127',
   buttonTextColor = '#07F469',
@@ -20,35 +16,31 @@ export default function HorizontalCard({
 
   const handleRegister = () => {
     if (!isRegistered) {
-      navigation.navigate("Detail", {
-        title,
-        subtitle,
-        totalTeams,
-        maxTeams,
-      });
+      navigation.navigate("Detail", { match }); // ✅ ส่ง match ทั้ง object
     }
   };
 
   return (
     <View style={[styles.card, { borderColor }]}>
-      <Image source={image} style={styles.image} />
+      <Image
+        source={match.promoImage ? { uri: match.promoImage } : require("../assets/f1.jpg")}
+        style={styles.image}
+      />
       <View style={styles.content}>
         <Text style={[styles.title, { color: titleColor }]} numberOfLines={1}>
-          {title}
+          {match.fullname || "ไม่มีชื่อรายการ"}
         </Text>
-        <Text style={styles.subtitle} numberOfLines={2}>
-          {subtitle}
+        <Text style={styles.subtitle} numberOfLines={1}>
+          ประเภท : {match.category2 || "-"} | {match.playerType || "-"}
         </Text>
         <Text style={styles.teamCount}>
-          {totalTeams} / {maxTeams} ทีม
+          {match.totalTeams || 0} / {match.teamAmount || 16} ทีม
         </Text>
         <View style={styles.footerRight}>
           <TouchableOpacity
             style={[
               styles.registerButton,
-              {
-                backgroundColor: isRegistered ? registeredButtonColor : buttonColor,
-              },
+              { backgroundColor: isRegistered ? registeredButtonColor : buttonColor },
             ]}
             onPress={handleRegister}
             disabled={isRegistered}
@@ -67,7 +59,6 @@ export default function HorizontalCard({
     </View>
   );
 }
-
 
 const styles = StyleSheet.create({
   card: {

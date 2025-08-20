@@ -1,3 +1,4 @@
+// PlayerRegistrationScreen.js
 import React, { useState } from "react";
 import {
   View,
@@ -10,21 +11,21 @@ import {
   ScrollView,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { FormLine } from "../../components/icon/FormLine";
 import * as ImagePicker from "expo-image-picker";
-
 import { Dropdown } from "react-native-element-dropdown";
 
 export default function PlayerRegistrationScreen() {
   const navigation = useNavigation();
+  const route = useRoute();
+  const { match, teamId, teamData } = route.params || {};
 
   const [playerImages, setPlayerImages] = useState(Array(24).fill(null));
   const [playerNames, setPlayerNames] = useState(Array(24).fill(""));
   const [playerNumbers, setPlayerNumbers] = useState(Array(24).fill(null));
 
-  // เตรียมข้อมูลเบอร์เสื้อ 1-99
   const jerseyNumbers = Array.from({ length: 99 }, (_, i) => ({
     label: `${i + 1}`,
     value: i + 1,
@@ -55,10 +56,26 @@ export default function PlayerRegistrationScreen() {
     setPlayerNumbers(newNumbers);
   };
 
+  const handleSubmit = () => {
+    const players = playerNames.map((name, index) => ({
+      name,
+      number: playerNumbers[index],
+      image: playerImages[index],
+    }));
+
+    // ส่งข้อมูลทั้งหมดไป PaymentScreen
+    navigation.navigate("Payment", {
+      match,
+      teamId,
+      teamData,
+      players,
+    });
+  };
+
   return (
     <View style={styles.container}>
       <StatusBar backgroundColor="#07F469" barStyle="light-content" />
-
+      
       {/* Header */}
       <LinearGradient
         colors={["#14141400", "#03C252"]}
@@ -72,7 +89,9 @@ export default function PlayerRegistrationScreen() {
           </TouchableOpacity>
           <View style={styles.textBox}>
             <Text style={styles.titleText}>ลงชื่อนักเตะ</Text>
-            <Text style={styles.subTitleText}>อาทิ7ชาลเลนจ์คัพ2024</Text>
+            <Text style={styles.subTitleText}>
+              {match?.fullname || "ไม่มีชื่อรายการ"}
+            </Text>
           </View>
           <FormLine size={50} color="#fff" />
         </View>
@@ -103,7 +122,6 @@ export default function PlayerRegistrationScreen() {
                   </Text>
                 </TouchableOpacity>
 
-                {/* Dropdown เบอร์เสื้อ */}
                 <View style={styles.dropdownContainer}>
                   <Dropdown
                     style={styles.dropdown}
@@ -111,7 +129,7 @@ export default function PlayerRegistrationScreen() {
                     labelField="label"
                     valueField="value"
                     placeholder="เบอร์"
-                    placeholderStyle={styles.dropdownPlaceholder} // เพิ่มตรงนี้สำหรับ placeholder
+                    placeholderStyle={styles.dropdownPlaceholder}
                     value={playerNumbers[index]}
                     onChange={(item) => updatePlayerNumber(item.value, index)}
                     maxHeight={150}
@@ -144,23 +162,20 @@ export default function PlayerRegistrationScreen() {
         </View>
       </ScrollView>
 
-      {/* Footer */}
       <View style={styles.footer}>
         <View style={styles.boxwarning}>
           <Text style={styles.boxWarningText}>
             * ตรวจสอบข้อมูลให้ครบถ้วนก่อนกด "ดำเนินการต่อ"
           </Text>
         </View>
-        <TouchableOpacity
-          style={styles.submitButton}
-          onPress={() => navigation.navigate("Payment")}
-        >
+        <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
           <Text style={styles.submitButtonText}>ดำเนินการต่อ</Text>
         </TouchableOpacity>
       </View>
     </View>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {
@@ -169,9 +184,7 @@ const styles = StyleSheet.create({
     paddingTop: 55,
     paddingHorizontal: 15,
   },
-  scrollContent: {
-    paddingBottom: 160,
-  },
+  scrollContent: { paddingBottom: 160 },
   headerBox: {
     width: "100%",
     height: 80,
@@ -185,21 +198,9 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
-  textBox: {
-    flex: 1,
-    alignItems: "flex-end",
-    marginEnd: 10,
-  },
-  titleText: {
-    color: "#fff",
-    fontSize: 13,
-    fontFamily: "Kanit-SemiBold",
-  },
-  subTitleText: {
-    color: "#fff",
-    fontSize: 13,
-    fontFamily: "Kanit-SemiBold",
-  },
+  textBox: { flex: 1, alignItems: "flex-end", marginEnd: 10 },
+  titleText: { color: "#fff", fontSize: 13, fontFamily: "Kanit-SemiBold" },
+  subTitleText: { color: "#fff", fontSize: 13, fontFamily: "Kanit-SemiBold" },
   label: {
     color: "#07F469",
     fontSize: 13,
@@ -211,11 +212,7 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     justifyContent: "space-between",
   },
-  playerBox: {
-    width: "30%",
-    marginBottom: 15,
-    alignItems: "center",
-  },
+  playerBox: { width: "30%", marginBottom: 15, alignItems: "center" },
   playerImagePlaceholder: {
     width: 105,
     height: 130,
