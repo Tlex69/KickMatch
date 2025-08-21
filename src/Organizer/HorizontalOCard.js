@@ -15,18 +15,17 @@ export default function HorizontalCard({
   registeredButtonColor = '#444',
   registeredButtonTextColor = '#ccc',
   titleColor = '#07F469',
+  hideTeamCount = false, 
 }) {
   const navigation = useNavigation();
 
   const handleRegister = () => {
-    if (!isRegistered) {
-      navigation.navigate("Detail", {
-        title,
-        subtitle,
-        totalTeams,
-        maxTeams,
-      });
-    }
+    navigation.navigate("Detail", {
+      title,
+      subtitle,
+      totalTeams,
+      maxTeams,
+    });
   };
 
   return (
@@ -39,9 +38,16 @@ export default function HorizontalCard({
         <Text style={styles.subtitle} numberOfLines={2}>
           {subtitle}
         </Text>
-        <Text style={styles.teamCount}>
+
+        <Text
+          style={[
+            styles.teamCount,
+            hideTeamCount && { opacity: 0 }, 
+          ]}
+        >
           {totalTeams} / {maxTeams} ทีม
         </Text>
+
         <View style={styles.footerRight}>
           <TouchableOpacity
             style={[
@@ -51,7 +57,6 @@ export default function HorizontalCard({
               },
             ]}
             onPress={handleRegister}
-            disabled={isRegistered}
           >
             <Text
               style={[

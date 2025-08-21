@@ -19,6 +19,7 @@ import { Edit2 } from "../../components/icon/Edit2";
 // Firebase
 import { db } from "../../firebase";
 import { doc, updateDoc } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
 
 export default function RegisterFormMatchTwoScreen({ route, navigation }) {
   const { matchId } = route.params || {};
@@ -49,9 +50,19 @@ export default function RegisterFormMatchTwoScreen({ route, navigation }) {
     }
 
     try {
+      const auth = getAuth();
+      const currentUser = auth.currentUser;
+
+      if (!currentUser) {
+        Alert.alert("เกิดข้อผิดพลาด", "ไม่พบผู้ใช้ปัจจุบัน");
+        return;
+      }
+
       await updateDoc(doc(db, "matches", matchId), {
         qrCode: promoImage,
+        ownerUid: currentUser.uid, // บันทึก uid ของผู้สร้างรายการ
       });
+
       navigation.navigate("LoadingPaymentOScreen", { matchId });
     } catch (error) {
       Alert.alert("เกิดข้อผิดพลาด", error.message);

@@ -13,28 +13,21 @@ import { Ionicons } from "@expo/vector-icons";
 
 export default function DetailScreen() {
   const navigation = useNavigation();
-  const route = useRoute();
-const { match } = useRoute().params || {};
-console.log(match);
+  const { match } = useRoute().params || {};
+
   return (
     <ScrollView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#141414" />
 
       <View style={styles.imageContainer}>
         <Image
-          source={
-            match?.promoImage
-              ? { uri: match.promoImage }
-              : require("../../assets/f1.jpg")
-          }
+          source={match?.promoImage ? { uri: match.promoImage } : require("../../assets/f1.jpg")}
           style={styles.image}
           resizeMode="cover"
         />
-
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
-          activeOpacity={0.7}
         >
           <View style={styles.backButtonCircle}>
             <Ionicons name="arrow-back" size={24} color="#07F469" />
@@ -43,9 +36,7 @@ console.log(match);
       </View>
 
       <View style={styles.detailContainer}>
-        <Text style={styles.titleText}>
-          {match?.fullname || "ไม่มีชื่อรายการ"}
-        </Text>
+        <Text style={styles.titleText}>{match?.fullname || "ไม่มีชื่อรายการ"}</Text>
 
         <View style={styles.boxsub}>
           <Text style={styles.subtitle}>รายละเอียด</Text>
@@ -53,20 +44,19 @@ console.log(match);
 
         <View style={styles.boxdetail}>
           <Text style={styles.subdetail}>
-            ประเภทการแข่งขัน :{" "}
-            <Text style={styles.subsubdetail}>{match?.category2 || "-"}</Text>
+            ประเภทการแข่งขัน : <Text style={styles.subsubdetail}>{match?.category2 || "-"}</Text>
           </Text>
           <Text style={styles.subdetail}>
-            ประเภทผู้เล่น :{" "}
-            <Text style={styles.subsubdetail}>{match?.playerType || "-"}</Text>
+            ประเภทผู้เล่น : <Text style={styles.subsubdetail}>{match?.playerType || "-"}</Text>
           </Text>
           <Text style={styles.subdetail}>
-            จำนวนทีมที่รับสมัคร :{" "}
-            <Text style={styles.subsubdetail}>{match?.teamAmount || "-"}</Text>
+            จำนวนทีมที่สมัครแล้ว / จำนวนทีมที่รับสมัคร :{" "}
+            <Text style={styles.subsubdetail}>
+              {match?.totalTeams || 0} / {match?.teamAmount || 0} ทีม
+            </Text>
           </Text>
           <Text style={styles.subdetail}>
-            ค่าสมัครต่อทีม :{" "}
-            <Text style={styles.subsubdetail}>{match?.price || "0"} บาท</Text>
+            ค่าสมัครต่อทีม : <Text style={styles.subsubdetail}>{match?.price || 0} บาท</Text>
           </Text>
         </View>
 
@@ -79,22 +69,18 @@ console.log(match);
 
         <View style={styles.boxrules}>
           <Text style={styles.subrules}>
-            กฎกติกา :{" "}
-            <Text style={styles.subsubrules}>{match?.rules || "-"}</Text>
+            กฎกติกา : <Text style={styles.subsubrules}>{match?.rules || "-"}</Text>
           </Text>
 
           <View style={styles.boxother}>
             <Text style={styles.subother}>
-              สถานที่จัดแข่งขัน :{" "}
-              <Text style={styles.subsubother}>{match?.venue || "-"}</Text>
+              สถานที่จัดแข่งขัน : <Text style={styles.subsubother}>{match?.venue || "-"}</Text>
             </Text>
             <Text style={styles.subother}>
-              หมดเขตสมัคร :{" "}
-              <Text style={styles.subsubother}>{match?.endDate || "-"}</Text>
+              หมดเขตสมัคร : <Text style={styles.subsubother}>{match?.endDate || "-"}</Text>
             </Text>
             <Text style={styles.subother}>
-              ติดต่อ/สอบถาม :{" "}
-              <Text style={styles.subsubother}>{match?.contact || "-"}</Text>
+              ติดต่อ/สอบถาม : <Text style={styles.subsubother}>{match?.contact || "-"}</Text>
             </Text>
           </View>
         </View>
@@ -130,27 +116,10 @@ const styles = StyleSheet.create({
   },
   detailContainer: { paddingHorizontal: 20, paddingTop: 20 },
   titleText: { color: "#07F469", fontSize: 18, fontFamily: "Kanit-SemiBold" },
-  boxsub: {
-    width: 90,
-    height: 28,
-    backgroundColor: "#202020",
-    borderRadius: 15,
-    alignItems: "center",
-    marginTop: 20,
-  },
-  subtitle: {
-    fontFamily: "Kanit-SemiBold",
-    fontSize: 13,
-    color: "#07F469",
-    marginTop: 2,
-  },
+  boxsub: { width: 90, height: 28, backgroundColor: "#202020", borderRadius: 15, alignItems: "center", marginTop: 20 },
+  subtitle: { fontFamily: "Kanit-SemiBold", fontSize: 13, color: "#07F469", marginTop: 2 },
   boxdetail: { marginTop: 5 },
-  subdetail: {
-    fontFamily: "Kanit-Regular",
-    fontSize: 14,
-    color: "#07F469",
-    paddingTop: 15,
-  },
+  subdetail: { fontFamily: "Kanit-Regular", fontSize: 14, color: "#07F469", paddingTop: 15 },
   subsubdetail: { color: "#fff" },
   boxreward: { marginTop: 25 },
   subreward: { fontFamily: "Kanit-Regular", color: "#07F469" },
@@ -173,9 +142,5 @@ const styles = StyleSheet.create({
     alignItems: "center",
     zIndex: 10,
   },
-  registerButtonText: {
-    color: "#154127",
-    fontSize: 17,
-    fontFamily: "Kanit-SemiBold",
-  },
+  registerButtonText: { color: "#154127", fontSize: 17, fontFamily: "Kanit-SemiBold" },
 });

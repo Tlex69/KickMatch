@@ -1,26 +1,76 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
   StyleSheet,
   StatusBar,
-  ScrollView,
+  ScrollView,Image
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
+import { useNavigation } from "@react-navigation/native";
 import { ViewGridDetail2 } from "../../components/icon/ViewGridDetail2";
 import { DocFail } from "../../components/icon/DocFail";
+import HorizontalCard from "../../components/HorizontalCard"; 
+import { db, auth } from "../../firebase";
+import { collection, getDocs } from "firebase/firestore";
+import { onAuthStateChanged } from "firebase/auth";
 
 export default function CompetitionlistScreen() {
   const navigation = useNavigation();
+  const [competitions, setCompetitions] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // สมมติข้อมูลรายการแข่ง
-  const [competitions, setCompetitions] = useState([]); 
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        fetchCompetitions(user.uid);
+      } else {
+        console.log("User not logged in");
+        setCompetitions([]);
+        setLoading(false);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const fetchCompetitions = async (uid) => {
+    try {
+      const querySnapshot = await getDocs(collection(db, "matches"));
+      const allMatches = querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        console.log("Match data:", data); 
+        return { id: doc.id, ...data };
+      });
+
+      // กรองเฉพาะรายการที่ user จ่ายเงินแล้ว
+      const paidMatches = allMatches.filter(match =>
+        Array.isArray(match.paidUsers) && match.paidUsers.includes(uid)
+      );
+
+      console.log("Paid matches:", paidMatches);
+
+      setCompetitions(paidMatches);
+      setLoading(false);
+    } catch (error) {
+      console.log("Error fetching competitions:", error);
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
+        <Text style={{ color: "#fff" }}>กำลังโหลดรายการแข่งขัน...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
       <StatusBar backgroundColor="#07F469" barStyle="light-content" />
 
+      {/* Header */}
       <LinearGradient
         colors={["#14141400", "#03C252"]}
         style={styles.headerBox}
@@ -32,27 +82,34 @@ export default function CompetitionlistScreen() {
             <Text style={styles.titleText}>รายการแข่งขัน</Text>
             <Text style={styles.subTitleText}>รายการแข่งขันที่คุณสมัคร</Text>
           </View>
-
           <ViewGridDetail2 size={45} color="#fff" />
         </View>
       </LinearGradient>
 
       <ScrollView
-        style={styles.scrollContainer}
-        contentContainerStyle={competitions.length === 0 && styles.emptyContainer}
-        showsVerticalScrollIndicator={false}
-      >
-        {competitions.length === 0 ? (
-          <View style={styles.emptyContent}>
-            <DocFail width={110} height={120} fill="#141414" />
-            <Text style={styles.emptyText}>ยังไม่มีรายการ</Text>
-          </View>
-        ) : (
-          <View style={styles.boxcard}>
-            {/* แสดงรายการแข่งขันที่มี */}
-          </View>
-        )}
-      </ScrollView>
+  style={styles.scrollContainer}
+  contentContainerStyle={
+    competitions.length === 0 && styles.emptyContainer
+  }
+  showsVerticalScrollIndicator={false}
+>
+  {competitions.length === 0 ? (
+    <View style={styles.emptyContent}>
+      <DocFail width={110} height={120} fill="#141414" />
+      <Text style={styles.emptyText}>ยังไม่มีรายการ</Text>
+    </View>
+  ) : (
+    competitions.map((comp) => (
+      <HorizontalCard
+        key={comp.id}
+        match={comp} 
+        isRegistered={true} 
+      />
+    ))
+  )}
+</ScrollView>
+
+
     </View>
   );
 }
@@ -95,10 +152,6 @@ const styles = StyleSheet.create({
     marginTop: 15,
     width: "100%",
   },
-  boxcard: {
-    paddingBottom: 35,
-    width: "100%",
-  },
   emptyContainer: {
     flexGrow: 1,
     justifyContent: "center",
@@ -107,7 +160,7 @@ const styles = StyleSheet.create({
   emptyContent: {
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 200
+    marginBottom: 200,
   },
   emptyText: {
     color: "#383838",

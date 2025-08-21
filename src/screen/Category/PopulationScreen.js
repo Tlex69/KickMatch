@@ -16,8 +16,6 @@ import HorizontalCard from "../../../components/HorizontalCard";
 import { db } from "../../../firebase";
 import { collection, getDocs, query, where } from "firebase/firestore";
 
-const localImage = require("../../../assets/f1.jpg");
-
 export default function PopulationScreen() {
   const navigation = useNavigation();
   const [matches, setMatches] = useState([]);
@@ -26,14 +24,14 @@ export default function PopulationScreen() {
   useEffect(() => {
     const fetchPopulationMatches = async () => {
       try {
-        const q = query(
-          collection(db, "matches"),
-          where("playerType", "==", "ประชาชน")
-        );
+        const q = query(collection(db, "matches"), where("playerType", "==", "ประชาชน"));
         const querySnapshot = await getDocs(q);
         const matchesData = [];
         querySnapshot.forEach((doc) => {
-          matchesData.push({ id: doc.id, ...doc.data() });
+          matchesData.push({
+            id: doc.id,
+            ...doc.data(),
+          });
         });
         setMatches(matchesData);
       } catch (error) {
@@ -48,15 +46,25 @@ export default function PopulationScreen() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#141414" }}>
+      <View style={styles.loader}>
         <ActivityIndicator size="large" color="#FFC300" />
+      </View>
+    );
+  }
+
+  if (!matches.length) {
+    return (
+      <View style={styles.loader}>
+        <Text style={{ color: "#ccc", fontSize: 16 }}>
+          ยังไม่มีรายการแข่งขันสำหรับประชาชน
+        </Text>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      <StatusBar backgroundColor="#07F469" barStyle="light-content" />
+      <StatusBar backgroundColor="#FFC300" barStyle="light-content" />
 
       <LinearGradient
         colors={["#14141400", "#FFC300"]}
@@ -79,33 +87,19 @@ export default function PopulationScreen() {
       </LinearGradient>
 
       <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-        {matches.length === 0 ? (
-          <Text style={{ color: "#ccc", textAlign: "center", marginTop: 20 }}>
-            ยังไม่มีรายการแข่งขันสำหรับประชาชน
-          </Text>
-        ) : (
-          <View style={styles.boxcard}>
-            {matches.map((match) => (
-              <HorizontalCard
-                key={match.id}
-                image={match.promoImage ? { uri: match.promoImage } : localImage}
-                title={match.title || "ไม่มีชื่อรายการ"}
-                subtitle={`ประเภท : ${match.category2 || "-"} | ประชาชน`}
-                onPress={() => navigation.navigate("DetailScreen", { matchId: match.id })}
-                isRegistered={false}
-                borderColor="#FFC300"
-                buttonColor="#FFC300"
-                buttonTextColor="#9D6414"
-                registeredButtonColor="#444"
-                registeredButtonTextColor="#ccc"
-                titleColor="#C3780E"
-                onRegister={() => console.log("กดสมัคร")}
-                totalTeams={match.totalTeams || 0}
-                maxTeams={match.teamAmount || 0}
-              />
-            ))}
-          </View>
-        )}
+        {matches.map((match) => (
+          <HorizontalCard
+            key={match.id}
+            match={match} // ส่ง object ทั้งหมดไป DetailScreen
+            isRegistered={false}
+            borderColor="#FFC300"
+            buttonColor="#FFC300"
+            buttonTextColor="#9D6414"
+            registeredButtonColor="#444"
+            registeredButtonTextColor="#ccc"
+            titleColor="#C3780E"
+          />
+        ))}
       </ScrollView>
     </View>
   );
@@ -119,5 +113,5 @@ const styles = StyleSheet.create({
   titleText: { color: "#fff", fontSize: 13, fontFamily: "Kanit-SemiBold" },
   subTitleText: { color: "#fff", fontSize: 13, fontFamily: "Kanit-SemiBold" },
   scrollContainer: { marginTop: 15, width: "100%" },
-  boxcard: { paddingBottom: 35, width: "100%" },
+  loader: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#141414" },
 });

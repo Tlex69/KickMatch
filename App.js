@@ -55,9 +55,12 @@ export default function App() {
   }
 
   return (
-    <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
+    <View style={{ flex: 1 }} onLayout={onLayoutRootView} >
       <NavigationContainer>
-        <Stack.Navigator initialRouteName="Login">
+        <Stack.Navigator initialRouteName="Login"  screenOptions={{
+        gestureEnabled: false, 
+        headerShown: false,   
+      }}>
           <Stack.Screen
             name="Login"
             component={LoginScreen}

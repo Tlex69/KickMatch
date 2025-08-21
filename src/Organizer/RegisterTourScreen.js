@@ -1,4 +1,3 @@
-// RegisterTourScreen.js
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -13,38 +12,55 @@ import { LinearGradient } from "expo-linear-gradient";
 import { DocFail } from "../../components/icon/DocFail";
 import { FootballIcon } from "../../components/icon/FootballIcon";
 import { AntDesign } from "@expo/vector-icons";
-import HorizontalCard from "./HorizontalOCard"; // Adjust the import path as necessary
+import HorizontalCard from "./HorizontalOCard";
 
-// Firebase
 import { db } from "../../firebase";
 import { collection, getDocs } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
 
 export default function RegisterTourScreen() {
   const navigation = useNavigation();
   const [competitions, setCompetitions] = useState([]);
+  const auth = getAuth();
+  const currentUser = auth.currentUser;
 
   useEffect(() => {
-    const fetchCompetitions = async () => {
+    if (!currentUser) return;
+
+    const fetchCompetitionsWithTeams = async () => {
       try {
         const querySnapshot = await getDocs(collection(db, "matches"));
         const matchesData = [];
-        querySnapshot.forEach((doc) => {
-          matchesData.push({ id: doc.id, ...doc.data() });
-        });
+
+        for (const docSnap of querySnapshot.docs) {
+          const matchData = { id: docSnap.id, ...docSnap.data() };
+
+          // แสดงเฉพาะรายการของผู้ใช้ปัจจุบัน
+          if (matchData.ownerUid === currentUser.uid) {
+            // ดึง subcollection teams
+            const teamsSnap = await getDocs(collection(db, `matches/${docSnap.id}/teams`));
+            matchData.registeredTeams = teamsSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+            // เพิ่มจำนวนทีมที่สมัครแล้ว
+            matchData.totalTeams = matchData.registeredTeams.length;
+
+            matchesData.push(matchData);
+          }
+        }
+
         setCompetitions(matchesData);
       } catch (error) {
         console.log("Error fetching competitions:", error);
       }
     };
 
-    fetchCompetitions();
-  }, []);
+    fetchCompetitionsWithTeams();
+  }, [currentUser]);
 
   return (
     <View style={styles.container}>
       <StatusBar backgroundColor="#07F469" barStyle="light-content" />
 
-      {/* Header */}
       <LinearGradient
         colors={["#14141400", "#03C252"]}
         style={styles.headerBox}
@@ -60,7 +76,6 @@ export default function RegisterTourScreen() {
         </View>
       </LinearGradient>
 
-      {/* สร้างรายการแข่งขัน */}
       <TouchableOpacity
         style={styles.addButton}
         onPress={() => navigation.navigate("RegisterFormMatch")}
@@ -69,7 +84,6 @@ export default function RegisterTourScreen() {
         <Text style={styles.addButtonText}>สร้างรายการแข่งขัน</Text>
       </TouchableOpacity>
 
-      {/* รายการแข่งขัน */}
       <ScrollView
         style={styles.scrollContainer}
         contentContainerStyle={competitions.length === 0 && styles.emptyContainer}
@@ -87,10 +101,11 @@ export default function RegisterTourScreen() {
               image={comp.promoImage ? { uri: comp.promoImage } : require("../../assets/defualt.jpg")}
               title={comp.fullname || "ไม่มีชื่อ"}
               subtitle={comp.category2 || "ไม่มีรายละเอียด"}
-              totalTeams={comp.totalTeams || 0}
-              maxTeams={comp.teamAmount || 12}
-              isRegistered={false}
+              totalTeams={comp.totalTeams || 0} // จำนวนทีมที่สมัครแล้ว
+              maxTeams={comp.teamAmount || 12}  // จำนวนทีมสูงสุด
+              isRegistered={true}
               borderColor="#07F469"
+              teamStatusText={`สมัครแล้ว ${comp.totalTeams || 0}/${comp.teamAmount || 12} ทีม`}
             />
           ))
         )}

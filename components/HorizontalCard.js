@@ -3,7 +3,7 @@ import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 
 export default function HorizontalCard({
-  match = {}, // ✅ default เป็น object ว่าง
+  match = {},
   isRegistered = false,
   borderColor = '#07F469',
   buttonColor = '#154127',
@@ -15,9 +15,7 @@ export default function HorizontalCard({
   const navigation = useNavigation();
 
   const handleRegister = () => {
-    if (!isRegistered) {
-      navigation.navigate("Detail", { match }); // ✅ ส่ง match ทั้ง object
-    }
+    navigation.navigate("Detail", { match }); // ส่ง match object ทั้งหมด
   };
 
   return (
@@ -34,7 +32,7 @@ export default function HorizontalCard({
           ประเภท : {match.category2 || "-"} | {match.playerType || "-"}
         </Text>
         <Text style={styles.teamCount}>
-          {match.totalTeams || 0} / {match.teamAmount || 16} ทีม
+          {match.totalTeams || 0} / {match.teamAmount || 0} ทีม
         </Text>
         <View style={styles.footerRight}>
           <TouchableOpacity
@@ -68,7 +66,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     overflow: "hidden",
     marginBottom: 18,
-    width: "100%", 
+    width: "100%",
     height: 105,
     borderWidth: 1,
   },

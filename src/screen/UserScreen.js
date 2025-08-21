@@ -7,28 +7,23 @@ import {
   Image,
   TouchableOpacity,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native"; // ✅
-import {
-  MaterialIcons,
-  FontAwesome5,
-  AntDesign,
-  Entypo,
-} from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
+import { MaterialIcons, AntDesign, Entypo } from "@expo/vector-icons";
 import { Edit } from "../../components/icon/Edit";
 import { FootballPitch } from "../../components/icon/FootballPitch";
 import { RoundSupportAgent } from "../../components/icon/RoundSupportAgent";
-
+import { getAuth, signOut } from "firebase/auth";
 
 export default function UserScreen() {
-   const navigation = useNavigation();
-  const user = {
-    name: "สมชาย ใจดี",
-    id: "ID: 12345678",
-    avatar: "https://i.pravatar.cc/100",
-  };
+  const navigation = useNavigation();
+  const auth = getAuth();
+  const user = auth.currentUser;
 
+  // Logout function
   const handleLogout = () => {
-    console.log("ออกจากระบบ");
+    signOut(auth)
+      .then(() => navigation.replace("Login"))
+      .catch((error) => console.log("Logout error:", error));
   };
 
   const OptionItem = ({ icon, label, onPress }) => (
@@ -49,10 +44,13 @@ export default function UserScreen() {
       <StatusBar barStyle="light-content" backgroundColor="#07F469" />
 
       <View style={styles.header}>
-        <Image source={{ uri: user.avatar }} style={styles.avatar} />
+        <Image
+          source={{ uri: user?.photoURL || "https://i.pravatar.cc/100" }}
+          style={styles.avatar}
+        />
         <View style={styles.userInfo}>
-          <Text style={styles.name}>{user.name}</Text>
-          <Text style={styles.userId}>{user.id}</Text>
+          <Text style={styles.name}>{user?.displayName || "ผู้ใช้"}</Text>
+          <Text style={styles.userId}>UID: {user?.uid}</Text>
         </View>
         <TouchableOpacity onPress={handleLogout} style={styles.logoutCircle}>
           <MaterialIcons name="logout" size={18} color="#07F469" />
@@ -75,7 +73,6 @@ export default function UserScreen() {
             icon={<MaterialIcons name="history" size={20} color="#07F469" />}
             onPress={() => navigation.navigate("History")}
           />
-
           <OptionItem
             label="รายการที่ชอบ"
             icon={<AntDesign name="heart" size={20} color="#07F469" />}
@@ -90,32 +87,25 @@ export default function UserScreen() {
 
           <OptionItem
             label="จัดการแข่งขัน"
-            icon={
-              <FootballPitch
-                name="chalkboard-teacher"
-                size={18}
-                color="#07F469"
-              />
+            icon={<FootballPitch name="chalkboard-teacher" size={18} color="#07F469" />}
+            onPress={() =>
+               navigation.navigate("HomeO", { userId: auth.currentUser.uid })
+
             }
-            onPress={() => navigation.navigate("HomeO")}
           />
           <OptionItem
-             label="ผู้ช่วยในการแข่งขัน"
-                        icon={<RoundSupportAgent size={20} color="#07F469" />}
-                        onPress={() => navigation.navigate("ManagerO")}
-
+            label="ผู้ช่วยในการแข่งขัน"
+            icon={<RoundSupportAgent size={20} color="#07F469" />}
+            onPress={() => navigation.navigate("ManagerO")}
           />
         </View>
       </View>
     </View>
   );
 }
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#121212",
-    alignItems: "center",
-  },
+  container: { flex: 1, backgroundColor: "#121212", alignItems: "center" },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -131,21 +121,9 @@ const styles = StyleSheet.create({
     borderColor: "#154127",
     marginLeft: 10,
   },
-  userInfo: {
-    flex: 1,
-    marginLeft: 15,
-  },
-  name: {
-    color: "#07F469",
-    fontSize: 14,
-    fontFamily: "Kanit-SemiBold",
-  },
-  userId: {
-    color: "#138140",
-    fontSize: 11,
-    marginTop: 2,
-    fontFamily: "Kanit-Regular",
-  },
+  userInfo: { flex: 1, marginLeft: 15 },
+  name: { color: "#07F469", fontSize: 14, fontFamily: "Kanit-SemiBold" },
+  userId: { color: "#138140", fontSize: 11, marginTop: 2, fontFamily: "Kanit-Regular" },
   logoutCircle: {
     width: 30,
     height: 30,
@@ -163,10 +141,7 @@ const styles = StyleSheet.create({
     marginTop: 30,
     padding: 20,
   },
-  section: {
-    marginTop: 10,
-    marginBottom: 25,
-  },
+  section: { marginTop: 10, marginBottom: 25 },
   sectionLabel: {
     backgroundColor: "#202020",
     alignSelf: "flex-start",
@@ -176,17 +151,8 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     alignItems: "center",
   },
-  sectionText: {
-    fontFamily: "Kanit-SemiBold",
-    fontSize: 12,
-    color: "#07F469",
-    marginTop: 2,
-  },
-  optionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 12,
-  },
+  sectionText: { fontFamily: "Kanit-SemiBold", fontSize: 12, color: "#07F469", marginTop: 2 },
+  optionRow: { flexDirection: "row", alignItems: "center", paddingVertical: 12 },
   iconCircle: {
     width: 35,
     height: 35,
@@ -196,13 +162,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginRight: 15,
   },
-  optionLabel: {
-    flex: 1,
-    fontSize: 14,
-    color: "#07F469",
-    fontFamily: "Kanit-Regular",
-  },
-  chevron: {
-    marginLeft: 5,
-  },
+  optionLabel: { flex: 1, fontSize: 14, color: "#07F469", fontFamily: "Kanit-Regular" },
+  chevron: { marginLeft: 5 },
 });

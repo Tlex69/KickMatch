@@ -14,8 +14,9 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { FormLine } from "../../components/icon/FormLine";
 import * as ImagePicker from "expo-image-picker";
-import { doc, updateDoc, Timestamp } from "firebase/firestore";
-import { db } from "../../firebase"; 
+import { db, auth } from "../../firebase";
+import { doc, setDoc, Timestamp, updateDoc, arrayUnion } from "firebase/firestore";
+
 
 export default function PaymentScreen() {
   const navigation = useNavigation();
@@ -43,14 +44,29 @@ export default function PaymentScreen() {
     if (!teamId) throw new Error("teamId ไม่ถูกต้อง");
 
     const teamRef = doc(db, "teams", teamId);
-    await updateDoc(teamRef, {
-      paymentStatus: "success", // อัปเดตว่าสำเร็จ
-      paymentDate: Timestamp.fromDate(new Date()), // วันเวลาปัจจุบัน
-    });
+    const matchRef = doc(db, "matches", match?.id);
+
+    // อัปเดตสถานะทีม
+    await setDoc(teamRef, {
+      paymentStatus: "success",
+      paymentDate: Timestamp.fromDate(new Date()),
+    }, { merge: true });
+
+    
+if (matchRef && auth.currentUser?.uid) {
+  await updateDoc(matchRef, {
+    paidUsers: arrayUnion(auth.currentUser.uid) 
+  });// เพิ่ม current user UID ลงใน match.paidUsers
+if (matchRef && auth.currentUser?.uid) {
+  await updateDoc(matchRef, {
+    paidUsers: arrayUnion(auth.currentUser.uid),
+    totalTeams: (match.totalTeams || 0) + 1, // เพิ่มจำนวนทีมที่สมัคร
+  });
+}
+}
+
 
     Alert.alert("สำเร็จ", "ยืนยันการชำระเงินเรียบร้อยแล้ว");
-
-    // ไปหน้า LoadingScreen
     navigation.replace("LoadingPayment", {
       teamName: teamData?.teamName,
       matchName: match?.fullname,
@@ -63,9 +79,7 @@ export default function PaymentScreen() {
   }
 };
 
-
   const qrCodeUri = match?.qrCode || null;
-  const price = match?.price || null;
 
   return (
     <View style={styles.container}>
@@ -209,8 +223,6 @@ export default function PaymentScreen() {
   );
 }
 
-
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -262,14 +274,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: "#1a1a1a",
   },
-  QrCodeImage: {
-    width: 200,
-    height: 200,
-    alignSelf: "center",
-    marginVertical: 15,
-    borderRadius: 10,
-    backgroundColor: "#1a1a1a",
-  },
   listplayer: {
     width: "100%",
     height: 45,
@@ -311,13 +315,12 @@ const styles = StyleSheet.create({
     fontFamily: "Kanit-Regular",
   },
   slipPreview: { 
-  width: "100%",        
-  height: 300,        
-  borderRadius: 10,     
-  marginTop: 15,        
-  resizeMode: "contain",
-},
-
+    width: "100%",        
+    height: 300,        
+    borderRadius: 10,     
+    marginTop: 15,        
+    resizeMode: "contain",
+  },
   boxwarning: {
     backgroundColor: "#1D1D1D",
     borderColor: "#FFCC00",
@@ -345,6 +348,6 @@ const styles = StyleSheet.create({
     fontFamily: "Kanit-SemiBold",
   },
   footer: {
- bottom: 25,
+    bottom: 25,
   },
 });

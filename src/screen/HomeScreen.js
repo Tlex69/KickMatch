@@ -54,25 +54,26 @@ export default function HomeScreen() {
         <Text style={styles.title}>รายการแข่งที่แนะนำ</Text>
       </View>
 
-      <ScrollView
-        style={{ marginTop: 15 }}
-        contentContainerStyle={{ paddingBottom: 100 }}
-        showsVerticalScrollIndicator={false}
-      >
-        {matches.length === 0 ? (
-          <Text style={{ color: "#ccc", textAlign: "center", marginTop: 20 }}>
-            ยังไม่มีรายการแข่งขัน
-          </Text>
-        ) : (
-          matches.map((match) => (
-            <HorizontalCard
-              key={match.id}
-              match={match} // ✅ ส่ง match ทั้ง object
-              isRegistered={false}
-            />
-          ))
-        )}
-      </ScrollView>
+     <ScrollView
+  style={{ marginTop: 15 }}
+  contentContainerStyle={{ paddingBottom: 100 }}
+  showsVerticalScrollIndicator={false}
+>
+  {matches.length === 0 ? (
+    <Text style={{ color: "#ccc", textAlign: "center", marginTop: 20 }}>
+      ยังไม่มีรายการแข่งขัน
+    </Text>
+  ) : (
+    matches.slice(0, 3).map((match) => (   // ✅ เอาแค่ 3 อันแรก
+      <HorizontalCard
+        key={match.id}
+        match={match}
+        isRegistered={false}
+      />
+    ))
+  )}
+</ScrollView>
+
     </View>
   );
 }
