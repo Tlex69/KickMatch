@@ -32,6 +32,7 @@ import ManagerOScreen from "./src/Organizer/ManagerOScreen";
 import RegisterFormMatchTwoScreen from "./src/Organizer/RegisterFormMatchTwoScreen";
 import RegisterFormMatchQRScreen from "./src/Organizer/RegisterFormMatchQRScreen";
 import LoadingPaymentOScreen from "./src/Organizer/LoadingPaymentOScreen";
+import DrawScreen from "./src/Organizer/DrawScreen";
 SplashScreen.preventAutoHideAsync();
 
 const Stack = createNativeStackNavigator();
@@ -190,6 +191,11 @@ export default function App() {
           <Stack.Screen
             name="LoadingPaymentOScreen"
             component={LoadingPaymentOScreen}
+            options={{ headerShown: false }}
+          />
+<Stack.Screen
+            name="DrawScreen"
+            component={DrawScreen}
             options={{ headerShown: false }}
           />
 

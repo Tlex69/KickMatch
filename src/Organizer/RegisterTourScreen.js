@@ -15,7 +15,7 @@ import { AntDesign } from "@expo/vector-icons";
 import HorizontalCard from "./HorizontalOCard";
 
 import { db } from "../../firebase";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, doc, updateDoc } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
 export default function RegisterTourScreen() {
@@ -27,7 +27,7 @@ export default function RegisterTourScreen() {
   useEffect(() => {
     if (!currentUser) return;
 
-    const fetchCompetitionsWithTeams = async () => {
+    const fetchCompetitions = async () => {
       try {
         const querySnapshot = await getDocs(collection(db, "matches"));
         const matchesData = [];
@@ -35,15 +35,8 @@ export default function RegisterTourScreen() {
         for (const docSnap of querySnapshot.docs) {
           const matchData = { id: docSnap.id, ...docSnap.data() };
 
-          // แสดงเฉพาะรายการของผู้ใช้ปัจจุบัน
+          // แสดงเฉพาะ match ของเจ้าของ (ownerUid)
           if (matchData.ownerUid === currentUser.uid) {
-            // ดึง subcollection teams
-            const teamsSnap = await getDocs(collection(db, `matches/${docSnap.id}/teams`));
-            matchData.registeredTeams = teamsSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
-
-            // เพิ่มจำนวนทีมที่สมัครแล้ว
-            matchData.totalTeams = matchData.registeredTeams.length;
-
             matchesData.push(matchData);
           }
         }
@@ -54,8 +47,25 @@ export default function RegisterTourScreen() {
       }
     };
 
-    fetchCompetitionsWithTeams();
+    fetchCompetitions();
   }, [currentUser]);
+
+ const handleStartMatch = async (matchId) => {
+  try {
+    const matchRef = doc(db, "matches", matchId);
+    await updateDoc(matchRef, { status: "in_progress" });
+
+    // อัพเดต state ในหน้านี้ทันที
+    setCompetitions(prev =>
+      prev.map(comp =>
+        comp.id === matchId ? { ...comp, status: "in_progress" } : comp
+      )
+    );
+  } catch (error) {
+    console.log("Error updating match status:", error);
+  }
+};
+
 
   return (
     <View style={styles.container}>
@@ -70,7 +80,9 @@ export default function RegisterTourScreen() {
         <View style={styles.headerContent}>
           <View style={styles.textBox}>
             <Text style={styles.titleText}>รายการแข่งขัน</Text>
-            <Text style={styles.subTitleText}>รายการแข่งขันทั้งหมดที่คุณสร้าง</Text>
+            <Text style={styles.subTitleText}>
+              รายการแข่งขันทั้งหมดที่คุณสร้าง
+            </Text>
           </View>
           <FootballIcon size={5} color="#fff" />
         </View>
@@ -86,7 +98,9 @@ export default function RegisterTourScreen() {
 
       <ScrollView
         style={styles.scrollContainer}
-        contentContainerStyle={competitions.length === 0 && styles.emptyContainer}
+        contentContainerStyle={
+          competitions.length === 0 && styles.emptyContainer
+        }
         showsVerticalScrollIndicator={false}
       >
         {competitions.length === 0 ? (
@@ -95,19 +109,29 @@ export default function RegisterTourScreen() {
             <Text style={styles.emptyText}>ยังไม่มีรายการแข่งขัน</Text>
           </View>
         ) : (
-          competitions.map((comp) => (
-            <HorizontalCard
-              key={comp.id}
-              image={comp.promoImage ? { uri: comp.promoImage } : require("../../assets/defualt.jpg")}
-              title={comp.fullname || "ไม่มีชื่อ"}
-              subtitle={comp.category2 || "ไม่มีรายละเอียด"}
-              totalTeams={comp.totalTeams || 0} // จำนวนทีมที่สมัครแล้ว
-              maxTeams={comp.teamAmount || 12}  // จำนวนทีมสูงสุด
-              isRegistered={true}
-              borderColor="#07F469"
-              teamStatusText={`สมัครแล้ว ${comp.totalTeams || 0}/${comp.teamAmount || 12} ทีม`}
-            />
-          ))
+          competitions.map((comp) => {
+            const totalTeams = comp.totalTeams || 0;
+            const maxTeams = comp.teamAmount || 12;
+
+            return (
+              <HorizontalCard
+  key={comp.id}
+  image={
+    comp.promoImage
+      ? { uri: comp.promoImage }
+      : require("../../assets/defualt.jpg")
+  }
+  title={comp.fullname || "ไม่มีชื่อ"}
+  subtitle={comp.category2 || "ไม่มีรายละเอียด"}
+  totalTeams={totalTeams}
+  maxTeams={maxTeams}
+  borderColor="#07F469"
+  showStartButton={comp.status !== "in_progress"} 
+  onStartPress={() => handleStartMatch(comp.id)}
+/>
+
+            );
+          })
         )}
       </ScrollView>
     </View>

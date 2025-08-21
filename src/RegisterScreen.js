@@ -169,4 +169,21 @@ const styles = StyleSheet.create({
   boxtextinput3: {
     marginTop: 15,
   },
+  imagePicker: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: "#141414",
+    alignSelf: "center",
+    marginTop: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#07F469",
+  },
+  image: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+  },
 });

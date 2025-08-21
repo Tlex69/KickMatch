@@ -7,14 +7,17 @@ export default function HorizontalCard({
   title,
   subtitle,
   totalTeams = 0,
-  maxTeams = 0,
+  maxTeams = 12,
   borderColor = '#07F469',
   titleColor = '#07F469',
   statusText = "เปิดรับสมัครอยู่",
-  teamStatusText = `สมัครแล้ว ${totalTeams}/${maxTeams} ทีม`,
   statusColor = "#07F469",
 }) {
   const navigation = useNavigation();
+
+  // คำนวณเปอร์เซ็นต์การสมัคร
+// คำนวณเปอร์เซ็นต์การสมัคร
+const progress = Math.min(totalTeams / maxTeams, 1);
 
   return (
     <View style={[styles.card, { borderColor }]}>
@@ -31,9 +34,15 @@ export default function HorizontalCard({
           <Text style={[styles.statusText, { color: statusColor }]}>
             {statusText}
           </Text>
-          {teamStatusText ? (
-            <Text style={styles.teamCount}>{teamStatusText}</Text>
-          ) : null}
+          <Text style={styles.teamCount}>
+  สมัครแล้ว {totalTeams}/{maxTeams} ทีม
+</Text>
+
+
+          {/* Progress bar */}
+          <View style={styles.progressBackground}>
+            <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
+          </View>
         </View>
 
         <View style={styles.footerRight}>
@@ -99,6 +108,18 @@ const styles = StyleSheet.create({
     color: "#ccc",
     fontFamily: "Kanit-Regular",
   },
+  progressBackground: {
+    width: "100%",
+    height: 6,
+    backgroundColor: "#333",
+    borderRadius: 3,
+    marginTop: 3,
+  },
+  progressFill: {
+    height: "100%",
+    backgroundColor: "#07F469",
+    borderRadius: 3,
+  },
   footerRight: {
     position: "absolute",
     bottom: 10,
@@ -112,11 +133,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: '#154127', // ✅ สีเขียวคงที่
+    backgroundColor: '#154127',
   },
   registerText: {
     fontFamily: "Kanit-SemiBold",
     fontSize: 12,
-    color: '#07F469', // ✅ ข้อความสีดำ
+    color: '#07F469',
   },
 });

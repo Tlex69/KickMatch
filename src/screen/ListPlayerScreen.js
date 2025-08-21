@@ -72,7 +72,7 @@ export default function ListPlayerScreen() {
 
 
        {players.filter(player => player?.name && player?.image).length > 0 && (
-  <>
+         <>
     <Text style={styles.label}>รายชื่อนักเตะ</Text>
     <View style={styles.staffContainer}>
       {players
@@ -92,8 +92,7 @@ export default function ListPlayerScreen() {
         ))}
     </View>
   </>
-)}
-
+        )}
       </ScrollView>
     </View>
   );
