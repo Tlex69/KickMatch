@@ -139,7 +139,7 @@ export default function ListFootballScreen() {
                   >
                     <Text style={styles.boxLabel}>จำนวนทีมที่สมัคร</Text>
                     <Text style={styles.boxNumber}>
-                      {comp.totalTeams || 0}/{comp.totalTeams || 0}{" "}
+                      {comp.totalTeams || 0}/{comp.teamAmount || 0}{" "}
                       <Text style={styles.fontteam}>ทีม</Text>
                     </Text>
                   </LinearGradient>
@@ -153,7 +153,7 @@ export default function ListFootballScreen() {
                   >
                     <Text style={styles.boxLabel}>จำนวนทีมที่ชำระแล้ว</Text>
                     <Text style={styles.boxNumber}>
-                      {comp.totalTeams || 0}/{comp.totalTeams || 0}{" "}
+                      {comp.totalTeams || 0}/{comp.teamAmount || 0}{" "}
                       <Text style={styles.fontteam}>ทีม</Text>
                     </Text>
                   </LinearGradient>
@@ -170,7 +170,7 @@ export default function ListFootballScreen() {
                     <Text style={styles.boxLabely}>จำนวนทีมที่ขายแล้ว</Text>
                     <CupBrokenIcon size={60} color="#fff" />
                     <Text style={styles.boxNumbery}>
-                      {comp.totalTeams || 0}/{comp.totalTeams || 0}{" "}
+                      {comp.totalTeams || 0}/{comp.teamAmount || 0}{" "}
                       <Text style={styles.fontteam}>ทีม</Text>
                     </Text>
                   </View>
