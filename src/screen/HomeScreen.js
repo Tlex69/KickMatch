@@ -54,7 +54,7 @@ export default function HomeScreen() {
         <Text style={styles.title}>รายการแข่งที่แนะนำ</Text>
       </View>
 
-     <ScrollView
+    <ScrollView
   style={{ marginTop: 15 }}
   contentContainerStyle={{ paddingBottom: 100 }}
   showsVerticalScrollIndicator={false}
@@ -64,15 +64,21 @@ export default function HomeScreen() {
       ยังไม่มีรายการแข่งขัน
     </Text>
   ) : (
-    matches.slice(0, 3).map((match) => (   // ✅ เอาแค่ 3 อันแรก
-      <HorizontalCard
-        key={match.id}
-        match={match}
-        isRegistered={false}
-      />
-    ))
+    matches.slice(0, 3).map((match) => {
+      const isFull = match.totalTeams >= match.teamAmount; // ตรวจสอบว่าเต็มแล้ว
+      return (
+        <HorizontalCard
+          key={match.id}
+          match={match}
+          isRegistered={false}
+          disabled={isFull} // ส่ง props ไปให้การ์ดรู้ว่าไม่สามารถกดได้
+          style={{ opacity: isFull ? 0.5 : 1 }} // สีจางถ้าเต็ม
+        />
+      );
+    })
   )}
 </ScrollView>
+
 
     </View>
   );

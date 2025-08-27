@@ -1,3 +1,4 @@
+// 🔹 DrawScreen.js
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -6,50 +7,44 @@ import {
   StatusBar,
   ScrollView,
   ActivityIndicator,
-    TouchableOpacity,
+  TouchableOpacity,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import DiceIcon from "../../components/icon/DiceIcon";
-import HorizontalCard from "../../components/HorizontalCard";
 import { db } from "../../firebase";
-import { collection, getDocs, query, where } from "firebase/firestore";
-import RandomIcon from "../../components/icon/RandomIcon"; // ไฟล์ไอคอนแยก
+import { doc, getDoc } from "firebase/firestore";
+import RandomIcon from "../../components/icon/RandomIcon";
 
 export default function DrawScreen() {
   const navigation = useNavigation();
-  const [matches, setMatches] = useState([]);
+  const route = useRoute();
+  const { matchId } = route.params; // ✅ รับ matchId มาจาก ListFootballScreen
+  const [matchData, setMatchData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchCupMatches = async () => {
+    const fetchMatch = async () => {
       try {
-        const q = query(
-          collection(db, "matches"),
-          where("category2", "==", "บอลถ้วย")
-        );
-        const querySnapshot = await getDocs(q);
-        const matchesData = [];
+        if (!matchId) return;
+        const matchRef = doc(db, "matches", matchId);
+        const matchSnap = await getDoc(matchRef);
 
-        querySnapshot.forEach((doc) => {
-          const data = doc.data() || {};
-          matchesData.push({
-            id: doc.id,
-            ...data,
-          });
-        });
-
-        setMatches(matchesData);
+        if (matchSnap.exists()) {
+          setMatchData({ id: matchSnap.id, ...matchSnap.data() });
+        } else {
+          console.log("Match not found!");
+        }
       } catch (error) {
-        console.log("Error fetching cup matches:", error);
+        console.log("Error fetching match:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchCupMatches();
-  }, []);
+    fetchMatch();
+  }, [matchId]);
 
   if (loading) {
     return (
@@ -59,18 +54,13 @@ export default function DrawScreen() {
     );
   }
 
-  if (!matches.length) {
+  if (!matchData) {
     return (
       <View style={styles.loader}>
-        <Text style={{ color: "#ccc", fontSize: 16 }}>
-          ยังไม่มีรายการแข่งขัน
-        </Text>
+        <Text style={{ color: "#ccc", fontSize: 16 }}>ไม่พบข้อมูลการแข่งขัน</Text>
       </View>
     );
   }
-
-  // ใช้ fullname จาก match แรกมาเป็นชื่อหัวข้อ
-  const tournamentName = matches[0]?.fullname || "ไม่พบชื่อรายการ";
 
   return (
     <View style={styles.container}>
@@ -91,7 +81,9 @@ export default function DrawScreen() {
           />
           <View style={styles.textBox}>
             <Text style={styles.titleText}>จับฉลากการแข่งขัน</Text>
-            <Text style={styles.subTitleText}>{tournamentName}</Text>
+            <Text style={styles.subTitleText}>
+              {matchData.fullname || "ไม่พบชื่อรายการ"}
+            </Text>
           </View>
           <DiceIcon size={50} color="#fff" />
         </View>
@@ -107,15 +99,39 @@ export default function DrawScreen() {
           <View style={styles.circle}>
             <RandomIcon size={180} color="#07F469" />
           </View>
-          <TouchableOpacity style={styles.button}>
-    <Text style={styles.buttonText}>จับฉลากการแข่งขัน</Text>
-  </TouchableOpacity>
+
+         <TouchableOpacity
+  style={styles.button}
+  onPress={() =>
+    navigation.navigate("DrawTwoScreen", {
+      matchId,
+      startTime: matchData.startTime, // ✅ ส่งเวลาไปด้วย
+    })
+  }
+>
+  <Text style={styles.buttonText}>
+    จับฉลาก
+    {matchData.startTime
+      ? ` (${new Date(matchData.startTime.seconds * 1000).toLocaleTimeString("th-TH", {
+          hour: "2-digit",
+          minute: "2-digit",
+        })})`
+      : ""}
+  </Text>
+</TouchableOpacity>
+
           <View style={styles.boxwarning}>
             <Text style={styles.wartext}>หมายเหตุการจับฉลาก</Text>
-            <Text style={styles.wartext}>- การจับฉลากจะสุ่มแบบอัตโนมัติ ไม่สามารถย้อนกลับได้</Text>
-            <Text style={styles.wartext}>- กรุณาตรวจสอบข้อมูลให้ถูกต้องก่อนเริ่มจับ</Text>
+            <Text style={styles.wartext}>
+              - การจับฉลากจะสุ่มแบบอัตโนมัติ ไม่สามารถย้อนกลับได้
+            </Text>
+            <Text style={styles.wartext}>
+              - กรุณาตรวจสอบข้อมูลให้ถูกต้องก่อนเริ่มจับ
+            </Text>
             <Text style={styles.wartext}>- เมื่อจับแล้ว ระบบจะบันทึกผลทันที</Text>
-            <Text style={styles.wartext}>- หากต้องการเปลี่ยนผล กรุณาติดต่อผู้ดูแลระบบหรือเริ่มต้นใหม่</Text>
+            <Text style={styles.wartext}>
+              - หากต้องการเปลี่ยนผล กรุณาติดต่อผู้ดูแลระบบหรือเริ่มต้นใหม่
+            </Text>
           </View>
         </View>
       </ScrollView>
@@ -157,45 +173,44 @@ const styles = StyleSheet.create({
     width: 240,
     height: 240,
     borderRadius: 200,
-    backgroundColor: "#154127", // สีวงกลม
+    backgroundColor: "#154127",
     justifyContent: "center",
     alignItems: "center",
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.7,
     shadowRadius: 10,
-    elevation: 8, // สำหรับ Android
+    elevation: 8,
   },
-    boxwarning: {
-        width: "100%",
-        backgroundColor: "#1A1A1A",
-        borderRadius: 20,
-        padding: 15,
-        marginTop: 15,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 3.84,
-        elevation: 5,
-    },
-    wartext: {
-        color: "#07F469",
-        fontSize: 10.5,
-        fontFamily: "Kanit-Regular",
-        marginBottom: 5,
-    },
-    button: {
-  width: "100%",
-  backgroundColor: "#07F469",
-  paddingVertical: 12,
-  borderRadius: 15,
-  justifyContent: "center",
-  alignItems: "center",
+  boxwarning: {
+    width: "100%",
+    backgroundColor: "#1A1A1A",
+    borderRadius: 20,
+    padding: 15,
+    marginTop: 15,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  wartext: {
+    color: "#07F469",
+    fontSize: 10.5,
+    fontFamily: "Kanit-Regular",
+    marginBottom: 5,
+  },
+  button: {
+    width: "100%",
+    backgroundColor: "#07F469",
+    paddingVertical: 12,
+    borderRadius: 15,
+    justifyContent: "center",
+    alignItems: "center",
     marginTop: 70,
-},
-buttonText: {
-  color: "#154127",
-  fontSize: 15,
-  fontFamily: "Kanit-SemiBold",
-},
-
+  },
+  buttonText: {
+    color: "#154127",
+    fontSize: 15,
+    fontFamily: "Kanit-SemiBold",
+  },
 });

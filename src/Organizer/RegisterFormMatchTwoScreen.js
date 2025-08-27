@@ -3,17 +3,18 @@ import React, { useState } from "react";
 import {
   View,
   Text,
-  TextInput,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
   Alert,
   StatusBar,
   Platform,
+  TextInput,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { Edit2 } from "../../components/icon/Edit2";
+import DateTimePicker from "@react-native-community/datetimepicker";
 
 // Firebase
 import { db } from "../../firebase";
@@ -29,8 +30,20 @@ export default function RegisterFormMatchTwoScreen({ route, navigation }) {
   const [venue, setVenue] = useState("");
   const [contact, setContact] = useState("");
 
+  // ✅ state สำหรับเวลา
+  const [startTime, setStartTime] = useState(new Date());
+  const [showPicker, setShowPicker] = useState(false);
+
   const handleSubmit = async () => {
-    if (!firstPrize || !secondPrize || !thirdPrize || !rules || !venue || !contact) {
+    if (
+      !firstPrize ||
+      !secondPrize ||
+      !thirdPrize ||
+      !rules ||
+      !venue ||
+      !contact ||
+      !startTime
+    ) {
       Alert.alert("กรุณากรอกข้อมูลให้ครบถ้วน");
       return;
     }
@@ -43,10 +56,19 @@ export default function RegisterFormMatchTwoScreen({ route, navigation }) {
         rules,
         venue,
         contact,
+        startTime: startTime.toISOString(), // เก็บเป็น ISO string
       });
       navigation.navigate("RegisterFormMatchQR", { matchId });
     } catch (error) {
       Alert.alert("เกิดข้อผิดพลาด", error.message);
+    }
+  };
+
+  // ✅ เมื่อเลือกวันที่/เวลา
+  const onChangeTime = (event, selectedDate) => {
+    setShowPicker(false);
+    if (selectedDate) {
+      setStartTime(selectedDate);
     }
   };
 
@@ -77,6 +99,7 @@ export default function RegisterFormMatchTwoScreen({ route, navigation }) {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
+        {/* --- input อื่น ๆ --- */}
         <Text style={styles.label}>รางวัลที่ผู้แข่งขันจะได้รับ</Text>
         <TextInput
           placeholder="อันดับที่ 1 เช่น เงินรางวัล + ถ้วยรางวัล"
@@ -126,6 +149,33 @@ export default function RegisterFormMatchTwoScreen({ route, navigation }) {
           value={contact}
           onChangeText={setContact}
         />
+
+        {/* ✅ เวลาเริ่มแข่งขันคู่แรก */}
+        <Text style={styles.label}>เวลาเริ่มแข่งขันคู่แรก</Text>
+        <TouchableOpacity
+          style={styles.input}
+          onPress={() => setShowPicker(true)}
+        >
+          <Text style={{ color: "#141414", fontSize: 15 }}>
+            {startTime.toLocaleString("th-TH", {
+              dateStyle: "medium",
+              timeStyle: "short",
+            })}
+          </Text>
+        </TouchableOpacity>
+
+        {showPicker && (
+          <View style={styles.pickerContainer}>
+            <DateTimePicker
+              value={startTime}
+              mode="datetime"
+              display={Platform.OS === "ios" ? "inline" : "default"}
+              onChange={onChangeTime}
+              textColor="#000" // iOS
+              themeVariant="light" // iOS
+            />
+          </View>
+        )}
 
         <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
           <Text style={styles.submitText}>ดำเนินการต่อ</Text>
@@ -177,7 +227,7 @@ const styles = StyleSheet.create({
     color: "#9747FF",
     fontSize: 13,
     marginBottom: 6,
-    fontFamily: "Kanit-SemiBold",
+    fontFamily: "Kanit-SemiBold", 
     paddingTop: 10,
   },
   input: {
@@ -185,12 +235,16 @@ const styles = StyleSheet.create({
     color: "#141414",
     borderRadius: 20,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 14,
     marginBottom: 15,
     borderWidth: 1,
     borderColor: "#9747FF",
-    fontFamily: "Kanit-Regular",
-    fontSize: 15,
+  },
+  pickerContainer: {
+    backgroundColor: "#fff", // ✅ ปฏิทินพื้นหลังขาว
+    borderRadius: 20,
+    padding: 10,
+    marginBottom: 15,
   },
   submitButton: {
     backgroundColor: "#9747FF",

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -6,8 +6,9 @@ import {
   StatusBar,
   ScrollView,
   TouchableOpacity,
+  RefreshControl,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useIsFocused } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { DocFail } from "../../components/icon/DocFail";
 import { FootballIcon } from "../../components/icon/FootballIcon";
@@ -20,52 +21,61 @@ import { getAuth } from "firebase/auth";
 
 export default function RegisterTourScreen() {
   const navigation = useNavigation();
+  const isFocused = useIsFocused();
   const [competitions, setCompetitions] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
+
   const auth = getAuth();
   const currentUser = auth.currentUser;
 
-  useEffect(() => {
+  // ฟังก์ชันโหลดรายการแข่งขัน
+  const fetchCompetitions = useCallback(async () => {
     if (!currentUser) return;
+    try {
+      const querySnapshot = await getDocs(collection(db, "matches"));
+      const matchesData = [];
 
-    const fetchCompetitions = async () => {
-      try {
-        const querySnapshot = await getDocs(collection(db, "matches"));
-        const matchesData = [];
-
-        for (const docSnap of querySnapshot.docs) {
-          const matchData = { id: docSnap.id, ...docSnap.data() };
-
-          // แสดงเฉพาะ match ของเจ้าของ (ownerUid)
-          if (matchData.ownerUid === currentUser.uid) {
-            matchesData.push(matchData);
-          }
+      for (const docSnap of querySnapshot.docs) {
+        const matchData = { id: docSnap.id, ...docSnap.data() };
+        if (matchData.ownerUid === currentUser.uid) {
+          matchesData.push(matchData);
         }
-
-        setCompetitions(matchesData);
-      } catch (error) {
-        console.log("Error fetching competitions:", error);
       }
-    };
 
-    fetchCompetitions();
+      setCompetitions(matchesData);
+    } catch (error) {
+      console.log("Error fetching competitions:", error);
+    }
   }, [currentUser]);
 
- const handleStartMatch = async (matchId) => {
-  try {
-    const matchRef = doc(db, "matches", matchId);
-    await updateDoc(matchRef, { status: "in_progress" });
+  // โหลดครั้งแรกและตอนหน้าโฟกัส
+  useEffect(() => {
+    fetchCompetitions();
+  }, [fetchCompetitions, isFocused]);
 
-    // อัพเดต state ในหน้านี้ทันที
-    setCompetitions(prev =>
-      prev.map(comp =>
-        comp.id === matchId ? { ...comp, status: "in_progress" } : comp
-      )
-    );
-  } catch (error) {
-    console.log("Error updating match status:", error);
-  }
-};
+  // Pull-to-Refresh
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchCompetitions();
+    setRefreshing(false);
+  };
 
+  // เริ่มการแข่งขัน
+  const handleStartMatch = async (matchId) => {
+    try {
+      const matchRef = doc(db, "matches", matchId);
+      await updateDoc(matchRef, { status: "in_progress" });
+
+      // อัปเดต state ทันที
+      setCompetitions((prev) =>
+        prev.map((comp) =>
+          comp.id === matchId ? { ...comp, status: "in_progress" } : comp
+        )
+      );
+    } catch (error) {
+      console.log("Error updating match status:", error);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -102,6 +112,14 @@ export default function RegisterTourScreen() {
           competitions.length === 0 && styles.emptyContainer
         }
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#07F469"
+            colors={["#07F469"]}
+          />
+        }
       >
         {competitions.length === 0 ? (
           <View style={styles.emptyContent}>
@@ -115,21 +133,20 @@ export default function RegisterTourScreen() {
 
             return (
               <HorizontalCard
-  key={comp.id}
-  image={
-    comp.promoImage
-      ? { uri: comp.promoImage }
-      : require("../../assets/defualt.jpg")
-  }
-  title={comp.fullname || "ไม่มีชื่อ"}
-  subtitle={comp.category2 || "ไม่มีรายละเอียด"}
-  totalTeams={totalTeams}
-  maxTeams={maxTeams}
-  borderColor="#07F469"
-  showStartButton={comp.status !== "in_progress"} 
-  onStartPress={() => handleStartMatch(comp.id)}
-/>
-
+                key={comp.id}
+                image={
+                  comp.promoImage
+                    ? { uri: comp.promoImage }
+                    : require("../../assets/defualt.jpg")
+                }
+                title={comp.fullname || "ไม่มีชื่อ"}
+                subtitle={comp.category2 || "ไม่มีรายละเอียด"}
+                totalTeams={totalTeams}
+                maxTeams={maxTeams}
+                borderColor="#07F469"
+                showStartButton={comp.status !== "in_progress"}
+                onStartPress={() => handleStartMatch(comp.id)}
+              />
             );
           })
         )}

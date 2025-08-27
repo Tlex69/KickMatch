@@ -24,7 +24,10 @@ export default function NineScreen() {
   useEffect(() => {
     const fetchNineMatches = async () => {
       try {
-        const q = query(collection(db, "matches"), where("category1", "==", "ฟุตบอล9คน"));
+        const q = query(
+          collection(db, "matches"),
+          where("category1", "==", "ฟุตบอล9คน")
+        );
         const querySnapshot = await getDocs(q);
         const matchesData = [];
 
@@ -89,7 +92,10 @@ export default function NineScreen() {
         </View>
       </LinearGradient>
 
-      <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+      >
         {matches.map((match) => (
           <HorizontalCard
             key={match.id}
@@ -109,12 +115,32 @@ export default function NineScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#141414", paddingTop: 55, paddingHorizontal: 15 },
-  headerBox: { width: "100%", height: 80, borderRadius: 20, paddingHorizontal: 15, justifyContent: "center" },
-  headerContent: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  container: {
+    flex: 1,
+    backgroundColor: "#141414",
+    paddingTop: 55,
+    paddingHorizontal: 15,
+  },
+  headerBox: {
+    width: "100%",
+    height: 80,
+    borderRadius: 20,
+    paddingHorizontal: 15,
+    justifyContent: "center",
+  },
+  headerContent: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
   textBox: { flex: 1, alignItems: "flex-end", marginEnd: 10 },
   titleText: { color: "#fff", fontSize: 13, fontFamily: "Kanit-SemiBold" },
   subTitleText: { color: "#fff", fontSize: 13, fontFamily: "Kanit-SemiBold" },
   scrollContainer: { marginTop: 15, width: "100%" },
-  loader: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#141414" },
+  loader: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#141414",
+  },
 });

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -7,41 +7,53 @@ import {
   ScrollView,
   Image,
   TouchableOpacity,
-  
+  Alert,
+  RefreshControl,
 } from "react-native";
 import CupBrokenIcon from "../../components/icon/CupBrokenIcon";
 import { LinearGradient } from "expo-linear-gradient";
 import { DocFail } from "../../components/icon/DocFail";
 import { FootballIcon } from "../../components/icon/FootballIcon";
 import { db } from "../../firebase";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  query,
+  where,
+  getDoc,
+  doc,
+  updateDoc,
+} from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { AntDesign } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
-
+import { useNavigation, useIsFocused } from "@react-navigation/native";
 
 export default function ListFootballScreen() {
   const [competitions, setCompetitions] = useState([]);
+  const [savedDraws, setSavedDraws] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
+
   const auth = getAuth();
   const currentUser = auth.currentUser;
-    const navigation = useNavigation(); // ✅ hook
+  const navigation = useNavigation();
+  const isFocused = useIsFocused();
 
+  const fetchCompetitions = useCallback(async () => {
+    if (!currentUser) return;
 
-  useEffect(() => {
-  if (!currentUser) return;
-
-  const fetchCompetitions = async () => {
     try {
       const querySnapshot = await getDocs(collection(db, "matches"));
       const matchesData = [];
+      const drawIds = [];
 
       for (const docSnap of querySnapshot.docs) {
         const matchData = { id: docSnap.id, ...docSnap.data() };
 
-        // แสดงเฉพาะ match ของเจ้าของ
-        if (matchData.ownerUid === currentUser.uid) {
-
-          // ดึงจำนวนทีมจาก collection 'teams'
+        if (
+          matchData.ownerUid === currentUser.uid &&
+          matchData.status === "in_progress"
+        ) {
+          // ดึงทีม
           const teamQuery = query(
             collection(db, "teams"),
             where("ownerUid", "==", currentUser.uid),
@@ -50,28 +62,62 @@ export default function ListFootballScreen() {
           const teamSnapshot = await getDocs(teamQuery);
           const teams = teamSnapshot.docs.map((teamDoc) => teamDoc.data());
 
-          const registeredTeams = teams.length;
-          const paidTeams = teams.filter(t => t.status === "paid").length;
-          const soldTeams = teams.filter(t => t.status === "sold").length;
+          // ตรวจสอบ draws ว่ามี match นี้หรือยัง
+          const drawDoc = await getDoc(doc(db, "draws", docSnap.id));
+          if (drawDoc.exists()) drawIds.push(docSnap.id);
 
           matchesData.push({
             ...matchData,
-            registeredTeams,
-            paidTeams,
-            soldTeams,
+            registeredTeams: teams.length,
+            paidTeams: teams.filter((t) => t.status === "paid").length,
+            soldTeams: teams.filter((t) => t.status === "sold").length,
           });
         }
       }
 
       setCompetitions(matchesData);
+      setSavedDraws(drawIds);
     } catch (error) {
       console.log("Error fetching competitions:", error);
     }
+  }, [currentUser]);
+
+  useEffect(() => {
+    fetchCompetitions();
+  }, [fetchCompetitions, isFocused]);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchCompetitions();
+    setRefreshing(false);
   };
 
-  fetchCompetitions();
-}, [currentUser]);
+  const handleDrawPress = (comp) => {
+    Alert.alert(
+      "จับฉลากการแข่งขัน",
+      `คุณต้องการจับฉลากสำหรับ ${comp.fullname || "การแข่งขันนี้"} ใช่หรือไม่?`,
+      [
+        { text: "ยกเลิก", style: "cancel" },
+        {
+          text: "ตกลง",
+          onPress: () => {
+            navigation.navigate("DrawScreen", { matchId: comp.id });
+          },
+        },
+      ]
+    );
+  };
 
+  const handleEndGame = async (comp) => {
+    try {
+      await updateDoc(doc(db, "matches", comp.id), { status: "endgame" });
+      Alert.alert("สำเร็จ", "การแข่งขันสิ้นสุดแล้ว");
+      setCompetitions((prev) => prev.filter((item) => item.id !== comp.id));
+    } catch (error) {
+      console.log("Error ending match:", error);
+      Alert.alert("ผิดพลาด", "ไม่สามารถจบการแข่งขันได้");
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -100,6 +146,14 @@ export default function ListFootballScreen() {
           competitions.length === 0 && styles.emptyContainer
         }
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#07F469"
+            colors={["#07F469"]}
+          />
+        }
       >
         <View style={styles.boxtitle}>
           <Text style={styles.title}>รายการแข่งที่กำลังเกิดขึ้น</Text>
@@ -113,7 +167,6 @@ export default function ListFootballScreen() {
         ) : (
           competitions.map((comp) => (
             <View key={comp.id} style={styles.competitionBox}>
-              {/* รูปภาพ */}
               <Image
                 source={
                   comp.promoImage
@@ -122,15 +175,12 @@ export default function ListFootballScreen() {
                 }
                 style={styles.image}
               />
-              {/* ชื่อรายการ */}
               <Text style={styles.fullname}>
                 {comp.fullname || "ไม่มีชื่อ"}
               </Text>
 
               <View style={styles.threeBoxContainer}>
-                {/* ฝั่งซ้าย: 2 ช่องแนวตั้ง */}
                 <View style={styles.leftBox}>
-                  {/* กรอบบน: จำนวนทีมสมัคร */}
                   <LinearGradient
                     colors={["#990D14", "#FF7DAD"]}
                     start={{ x: 0, y: 0 }}
@@ -139,12 +189,11 @@ export default function ListFootballScreen() {
                   >
                     <Text style={styles.boxLabel}>จำนวนทีมที่สมัคร</Text>
                     <Text style={styles.boxNumber}>
-                      {comp.totalTeams || 0}/{comp.teamAmount || 0}{" "}
+                      {comp.totalTeams}/{comp.teamAmount || 0}{" "}
                       <Text style={styles.fontteam}>ทีม</Text>
                     </Text>
                   </LinearGradient>
 
-                  {/* กรอบล่าง: จำนวนทีมชำระแล้ว */}
                   <LinearGradient
                     colors={["#781DF0", "#9747FF"]}
                     start={{ x: 0, y: 0 }}
@@ -153,15 +202,14 @@ export default function ListFootballScreen() {
                   >
                     <Text style={styles.boxLabel}>จำนวนทีมที่ชำระแล้ว</Text>
                     <Text style={styles.boxNumber}>
-                      {comp.totalTeams || 0}/{comp.teamAmount || 0}{" "}
+                      {comp.totalTeams}/{comp.teamAmount || 0}{" "}
                       <Text style={styles.fontteam}>ทีม</Text>
                     </Text>
                   </LinearGradient>
                 </View>
 
-                {/* ฝั่งขวา: 1 ช่องแนวนอน */}
                 <LinearGradient
-                  colors={["#C3780E", "#FFC300"]} // กรอบสีขาว
+                  colors={["#C3780E", "#FFC300"]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                   style={styles.rightBox}
@@ -170,39 +218,77 @@ export default function ListFootballScreen() {
                     <Text style={styles.boxLabely}>จำนวนทีมที่ขายแล้ว</Text>
                     <CupBrokenIcon size={60} color="#fff" />
                     <Text style={styles.boxNumbery}>
-                      {comp.totalTeams || 0}/{comp.teamAmount || 0}{" "}
+                      {comp.totalTeams}/{comp.teamAmount || 0}{" "}
                       <Text style={styles.fontteam}>ทีม</Text>
                     </Text>
                   </View>
                 </LinearGradient>
               </View>
+
               <View style={styles.buttonContainer}>
-  <TouchableOpacity 
-  style={styles.fullWidthButton}
-  onPress={() => navigation.navigate("DrawScreen", { title: comp.fullname })}
->
-  <Text style={styles.buttonText}>จับฉลากการแข่งขัน</Text>
-  <AntDesign name="right" size={18} color="#07F469" />
-</TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.fullWidthButton,
+                    savedDraws.includes(comp.id) && {
+                      backgroundColor: "#202020",
+                    },
+                  ]}
+                  onPress={() => handleDrawPress(comp)}
+                  disabled={savedDraws.includes(comp.id)}
+                >
+                  <Text
+                    style={[
+                      styles.buttonText,
+                      savedDraws.includes(comp.id)
+                        ? { color: "#999", fontFamily: "Kanit-SemiBold" }
+                        : { fontFamily: "Kanit-SemiBold" },
+                    ]}
+                  >
+                    จับฉลากการแข่งขัน
+                  </Text>
+                  <AntDesign
+                    name="right"
+                    size={18}
+                    color={savedDraws.includes(comp.id) ? "#999" : "#07F469"}
+                  />
+                </TouchableOpacity>
 
-<TouchableOpacity style={styles.fullWidthButton}>
-  <Text style={styles.buttonText}>ตารางแข่ง</Text>
-  <AntDesign name="right" size={18} color="#07F469" />
-</TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.fullWidthButton}
+                  onPress={() =>
+                    navigation.navigate("ScheduleScreen", { matchId: comp.id })
+                  }
+                >
+                  <Text style={styles.buttonText}>ตารางแข่ง</Text>
+                  <AntDesign name="right" size={18} color="#07F469" />
+                </TouchableOpacity>
 
-<TouchableOpacity style={styles.fullWidthButton}>
-  <Text style={styles.buttonText}>รายชื่อทีม</Text>
-  <AntDesign name="right" size={18} color="#07F469" />
-</TouchableOpacity>
+               
+                <TouchableOpacity
+                  style={styles.fullWidthButton}
+                  onPress={() =>
+                    navigation.navigate("ManagerCreO", { matchId: comp.id })
+                  }
+                >
+                  <Text style={styles.buttonText}>
+                    ทำงานร่วมกับผู้ช่วยจัดการแข่งขัน
+                  </Text>
+                  <AntDesign name="right" size={18} color="#07F469" />
+                </TouchableOpacity>
 
-<TouchableOpacity style={styles.fullWidthButton}>
-  <Text style={styles.buttonText}>ทำงานร่วมกับผู้ช่วยจัดการแข่งขัน</Text>
-  <AntDesign name="right" size={18} color="#07F469" />
-</TouchableOpacity>
-
-</View>
-
-
+                <TouchableOpacity
+                  style={[
+                    styles.fullWidthButton,
+                    { backgroundColor: "#F44607" },
+                  ]}
+                  onPress={() => handleEndGame(comp)}
+                >
+                  <Text style={[styles.buttonText, { color: "#fff" }]}>
+                    จบการแข่งขัน
+                  </Text>
+                  <AntDesign name="right" size={18} color="#fff" />
+                </TouchableOpacity>
+              </View>
             </View>
           ))
         )}
@@ -251,10 +337,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontFamily: "Kanit-SemiBold",
   },
-  competitionBox: {
-    marginBottom: 20,
-    alignItems: "flex-start",
-  },
+  competitionBox: { marginBottom: 20, alignItems: "flex-start" },
   image: { width: "100%", height: 200, borderRadius: 15, resizeMode: "cover" },
   fullname: {
     color: "#07F469",
@@ -272,18 +355,8 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
   },
   title: { color: "#07F469", fontSize: 13, fontFamily: "Kanit-SemiBold" },
-
-  /* กรอบสามกรอบ */
-  threeBoxContainer: {
-    flexDirection: "row",
-    gap: 10,
-    marginTop: 10,
-  },
-  leftBox: {
-    flex: 1,
-    flexDirection: "column",
-    gap: 10,
-  },
+  threeBoxContainer: { flexDirection: "row", gap: 10, marginTop: 10 },
+  leftBox: { flex: 1, flexDirection: "column", gap: 10 },
   leftTopBox: {
     flex: 1,
     borderRadius: 15,
@@ -296,12 +369,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     justifyContent: "center",
   },
-  rightBox: {
-    flex: 1,
-    height: 220,
-    borderRadius: 15,
-    overflow: "hidden",
-  },
+  rightBox: { flex: 1, height: 220, borderRadius: 15, overflow: "hidden" },
   boxLabel: {
     color: "#fff",
     fontSize: 14,
@@ -315,35 +383,12 @@ const styles = StyleSheet.create({
     fontFamily: "MuseoModerno-SemiBold",
     textAlign: "center",
   },
-  fontteam: {
-    fontFamily: "Kanit-SemiBold",
-    fontSize: 18,
-  },
+  fontteam: { fontFamily: "Kanit-SemiBold", fontSize: 18 },
   rightBoxContent: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     paddingVertical: 10,
-  },
-  rightBox: {
-    flex: 1,
-    height: 220,
-    borderRadius: 15,
-    overflow: "hidden",
-  },
-  boxLabel: {
-    color: "#fff",
-    fontSize: 14,
-    fontFamily: "Kanit-SemiBold",
-    textAlign: "center",
-    marginTop: 5,
-  },
-  boxNumber: {
-    color: "#fff",
-    fontSize: 22,
-    fontFamily: "MuseoModerno-SemiBold",
-    textAlign: "center",
-    marginTop: 3,
   },
   boxLabely: {
     color: "#fff",
@@ -359,46 +404,16 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 22,
   },
-  fontteam: {
-    fontFamily: "Kanit-SemiBold",
-    fontSize: 18,
+  buttonContainer: { marginTop: 25, width: "100%", gap: 10 },
+  fullWidthButton: {
+    width: "100%",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 15,
+    borderRadius: 10,
+    backgroundColor: "#202020",
   },
-  buttonRow: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  marginTop: 15,
-  gap: 10, 
-},
-actionButton: {
-  flex: 1, // ให้ปุ่มขยายเท่าๆกัน
-  paddingVertical: 10,
-  borderRadius: 10,
-  alignItems: 'center',
-},
-actionButtonText: {
-  color: '#fff',
-  fontSize: 14,
-  fontFamily: 'Kanit-SemiBold',
-},
-buttonContainer: {
-  marginTop: 25,
-  width: '100%',
-  gap: 10, 
-},
-fullWidthButton: {
-  width: '100%',
-  flexDirection: 'row',      
-  justifyContent: 'space-between', 
-  alignItems: 'center',  
-  paddingVertical: 12,
-  paddingHorizontal: 15,
-  borderRadius: 10,
-  backgroundColor: '#202020',
-},
-buttonText: {
-  color: '#07F469',
-  fontSize: 14,
-  fontFamily: 'Kanit-SemiBold',
-},
-
+  buttonText: { color: "#07F469", fontSize: 14, fontFamily: "Kanit-SemiBold" },
 });

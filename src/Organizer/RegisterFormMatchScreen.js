@@ -49,7 +49,7 @@ export default function RegisterFormMatchScreen({ navigation }) {
     { label: "8 ทีม", value: 8 },
     { label: "12 ทีม", value: 12 },
     { label: "16 ทีม", value: 16 },
-    { label: "32 ทีม", value: 32 }, 
+    { label: "32 ทีม", value: 32 },
     { label: "36 ทีม", value: 36 },
     { label: "48 ทีม", value: 48 },
   ];
@@ -65,7 +65,8 @@ export default function RegisterFormMatchScreen({ navigation }) {
   ];
 
   const handlePickPromoImage = async () => {
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    const permissionResult =
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permissionResult.granted) {
       Alert.alert("ต้องการสิทธิ์เข้าถึงรูปภาพ");
       return;
@@ -80,32 +81,39 @@ export default function RegisterFormMatchScreen({ navigation }) {
   };
 
   const handleContinue = async () => {
-  if (!fullname || !playerType || !teamAmount || !category1 || !category2 || !promoImage || !price) {
-    Alert.alert("กรุณากรอกข้อมูลให้ครบ");
-    return;
-  }
+    if (
+      !fullname ||
+      !playerType ||
+      !teamAmount ||
+      !category1 ||
+      !category2 ||
+      !promoImage ||
+      !price
+    ) {
+      Alert.alert("กรุณากรอกข้อมูลให้ครบ");
+      return;
+    }
 
-  try {
-    const docRef = await addDoc(collection(db, "matches"), {
-      fullname,
-      playerType,
-      teamAmount,
-      category1,
-      category2,
-      promoImage,
-      price,
-      startDate: startDate.toISOString(),
-      endDate: endDate.toISOString(),
-      createdAt: serverTimestamp(),
-    });
+    try {
+      const docRef = await addDoc(collection(db, "matches"), {
+        fullname,
+        playerType,
+        teamAmount,
+        category1,
+        category2,
+        promoImage,
+        price,
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        createdAt: serverTimestamp(),
+      });
 
-    // บันทึกสำเร็จ → ไปหน้า RegisterFormMatchTwoScreen พร้อมส่ง docId
-    navigation.navigate("RegisterFormMatchTwo", { matchId: docRef.id });
-  } catch (error) {
-    Alert.alert("เกิดข้อผิดพลาด", error.message);
-  }
-};
-
+      // บันทึกสำเร็จ → ไปหน้า RegisterFormMatchTwoScreen พร้อมส่ง docId
+      navigation.navigate("RegisterFormMatchTwo", { matchId: docRef.id });
+    } catch (error) {
+      Alert.alert("เกิดข้อผิดพลาด", error.message);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -143,7 +151,11 @@ export default function RegisterFormMatchScreen({ navigation }) {
           style={[styles.input, isFocus && { borderColor: "#6200EE" }]}
           placeholderStyle={{ color: "#888", fontFamily: "Kanit-Regular" }}
           selectedTextStyle={{ color: "#141414", fontFamily: "Kanit-Regular" }}
-          itemTextStyle={{ fontFamily: "Kanit-Regular", color: "#141414", fontSize: 14 }}
+          itemTextStyle={{
+            fontFamily: "Kanit-Regular",
+            color: "#141414",
+            fontSize: 14,
+          }}
           data={playerTypeOptions}
           labelField="label"
           valueField="value"
@@ -162,7 +174,11 @@ export default function RegisterFormMatchScreen({ navigation }) {
           style={[styles.input, isFocusTeam && { borderColor: "#6200EE" }]}
           placeholderStyle={{ color: "#888", fontFamily: "Kanit-Regular" }}
           selectedTextStyle={{ color: "#141414", fontFamily: "Kanit-Regular" }}
-          itemTextStyle={{ fontFamily: "Kanit-Regular", color: "#141414", fontSize: 14 }}
+          itemTextStyle={{
+            fontFamily: "Kanit-Regular",
+            color: "#141414",
+            fontSize: 14,
+          }}
           data={teamAmountOptions}
           labelField="label"
           valueField="value"
@@ -180,10 +196,20 @@ export default function RegisterFormMatchScreen({ navigation }) {
           <View style={styles.halfWidth}>
             <Text style={styles.label}>ประเภทรายการ 1</Text>
             <Dropdown
-              style={[styles.input, isFocusCategory1 && { borderColor: "#6200EE" }]}
+              style={[
+                styles.input,
+                isFocusCategory1 && { borderColor: "#6200EE" },
+              ]}
               placeholderStyle={{ color: "#888", fontFamily: "Kanit-Regular" }}
-              selectedTextStyle={{ color: "#141414", fontFamily: "Kanit-Regular" }}
-              itemTextStyle={{ fontFamily: "Kanit-Regular", color: "#141414", fontSize: 14 }}
+              selectedTextStyle={{
+                color: "#141414",
+                fontFamily: "Kanit-Regular",
+              }}
+              itemTextStyle={{
+                fontFamily: "Kanit-Regular",
+                color: "#141414",
+                fontSize: 14,
+              }}
               data={category1Options}
               labelField="label"
               valueField="value"
@@ -201,10 +227,20 @@ export default function RegisterFormMatchScreen({ navigation }) {
           <View style={styles.halfWidth}>
             <Text style={styles.label}>ประเภทรายการ 2</Text>
             <Dropdown
-              style={[styles.input, isFocusCategory2 && { borderColor: "#6200EE" }]}
+              style={[
+                styles.input,
+                isFocusCategory2 && { borderColor: "#6200EE" },
+              ]}
               placeholderStyle={{ color: "#888", fontFamily: "Kanit-Regular" }}
-              selectedTextStyle={{ color: "#141414", fontFamily: "Kanit-Regular" }}
-              itemTextStyle={{ fontFamily: "Kanit-Regular", color: "#141414", fontSize: 14 }}
+              selectedTextStyle={{
+                color: "#141414",
+                fontFamily: "Kanit-Regular",
+              }}
+              itemTextStyle={{
+                fontFamily: "Kanit-Regular",
+                color: "#141414",
+                fontSize: 14,
+              }}
               data={category2Options}
               labelField="label"
               valueField="value"
@@ -223,11 +259,22 @@ export default function RegisterFormMatchScreen({ navigation }) {
         <Text style={styles.label}>รูปโปรโมตรายการ</Text>
         <View style={styles.promoImageContainer}>
           <Text style={styles.promoText}>แนบรูปโปรโมต</Text>
-          <TouchableOpacity style={styles.attachButton} onPress={handlePickPromoImage}>
-            <Text style={styles.attachButtonText}>{promoImage ? "เปลี่ยนรูป" : "แนบรูป"}</Text>
+          <TouchableOpacity
+            style={styles.attachButton}
+            onPress={handlePickPromoImage}
+          >
+            <Text style={styles.attachButtonText}>
+              {promoImage ? "เปลี่ยนรูป" : "แนบรูป"}
+            </Text>
           </TouchableOpacity>
         </View>
-        {promoImage && <Image source={{ uri: promoImage }} style={styles.promoImagePreview} resizeMode="cover" />}
+        {promoImage && (
+          <Image
+            source={{ uri: promoImage }}
+            style={styles.promoImagePreview}
+            resizeMode="cover"
+          />
+        )}
 
         <Text style={styles.label}>ค่าสมัครต่อทีม</Text>
         <TextInput
@@ -240,7 +287,10 @@ export default function RegisterFormMatchScreen({ navigation }) {
         />
 
         <Text style={styles.label}>วันที่เริ่มแข่งขัน</Text>
-        <TouchableOpacity style={styles.dateButton} onPress={() => setShowStartPicker(true)}>
+        <TouchableOpacity
+          style={styles.dateButton}
+          onPress={() => setShowStartPicker(true)}
+        >
           <Text>{startDate.toLocaleString()}</Text>
         </TouchableOpacity>
         {showStartPicker && (
@@ -256,7 +306,10 @@ export default function RegisterFormMatchScreen({ navigation }) {
         )}
 
         <Text style={styles.label}>วันที่สิ้นสุดการแข่งขัน</Text>
-        <TouchableOpacity style={styles.dateButton} onPress={() => setShowEndPicker(true)}>
+        <TouchableOpacity
+          style={styles.dateButton}
+          onPress={() => setShowEndPicker(true)}
+        >
           <Text>{endDate.toLocaleString()}</Text>
         </TouchableOpacity>
         {showEndPicker && (
@@ -271,33 +324,113 @@ export default function RegisterFormMatchScreen({ navigation }) {
           />
         )}
 
-    <TouchableOpacity style={styles.submitButton} onPress={handleContinue}>
-  <Text style={styles.submitText}>ดำเนินการต่อ</Text>
-</TouchableOpacity>
-
-
+        <TouchableOpacity style={styles.submitButton} onPress={handleContinue}>
+          <Text style={styles.submitText}>ดำเนินการต่อ</Text>
+        </TouchableOpacity>
       </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#141414", paddingHorizontal: 15, paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 55 },
-  headerBox: { width: "100%", height: 80, borderRadius: 20, paddingHorizontal: 15, justifyContent: "center", marginBottom: 20 },
-  headerContent: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  container: {
+    flex: 1,
+    backgroundColor: "#141414",
+    paddingHorizontal: 15,
+    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 55,
+  },
+  headerBox: {
+    width: "100%",
+    height: 80,
+    borderRadius: 20,
+    paddingHorizontal: 15,
+    justifyContent: "center",
+    marginBottom: 20,
+  },
+  headerContent: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
   textBox: { flex: 1, alignItems: "flex-end", marginEnd: 10 },
   titleText: { color: "#fff", fontSize: 14, fontFamily: "Kanit-SemiBold" },
   subTitleText: { color: "#fff", fontSize: 14, fontFamily: "Kanit-SemiBold" },
-  label: { color: "#9747FF", fontSize: 13, marginBottom: 6, fontFamily: "Kanit-SemiBold", paddingTop: 10 },
-  input: { backgroundColor: "#fff", color: "#141414", borderRadius: 20, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 15, borderWidth: 1, borderColor: "#9747FF", fontFamily: "Kanit-Regular", fontSize: 15 },
+  label: {
+    color: "#9747FF",
+    fontSize: 13,
+    marginBottom: 6,
+    fontFamily: "Kanit-SemiBold",
+    paddingTop: 10,
+  },
+  input: {
+    backgroundColor: "#fff",
+    color: "#141414",
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: "#9747FF",
+    fontFamily: "Kanit-Regular",
+    fontSize: 15,
+  },
   row: { flexDirection: "row", justifyContent: "space-between" },
   halfWidth: { flex: 1, marginHorizontal: 5 },
-  promoImageContainer: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderWidth: 1, borderColor: "#9747FF", borderRadius: 20, width: "100%", height: 50, marginBottom: 15, backgroundColor: "#fff" },
-  promoText: { fontFamily: "Kanit-Regular", fontSize: 16, marginLeft: 10, color: "#888" },
-  attachButton: { backgroundColor: "#9747FF", borderRadius: 15, height: 50, width: 100, justifyContent: "center", alignItems: "center" },
-  attachButtonText: { color: "#fff", fontFamily: "Kanit-SemiBold", fontSize: 14 },
-  promoImagePreview: { width: "40%", height: 200, borderRadius: 15, marginBottom: 20, resizeMode: "cover" },
-  dateButton: { borderWidth: 1, borderColor: "#9747FF", borderRadius: 20, padding: 12, marginBottom: 15, backgroundColor: "#fff" },
-  submitButton: { backgroundColor: "#9747FF", borderRadius: 20, width: "100%", height: 50, alignItems: "center", marginBottom: 20, marginTop: 20, justifyContent: "center" },
+  promoImageContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderWidth: 1,
+    borderColor: "#9747FF",
+    borderRadius: 20,
+    width: "100%",
+    height: 50,
+    marginBottom: 15,
+    backgroundColor: "#fff",
+  },
+  promoText: {
+    fontFamily: "Kanit-Regular",
+    fontSize: 16,
+    marginLeft: 10,
+    color: "#888",
+  },
+  attachButton: {
+    backgroundColor: "#9747FF",
+    borderRadius: 15,
+    height: 50,
+    width: 100,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  attachButtonText: {
+    color: "#fff",
+    fontFamily: "Kanit-SemiBold",
+    fontSize: 14,
+  },
+  promoImagePreview: {
+    width: "40%",
+    height: 200,
+    borderRadius: 15,
+    marginBottom: 20,
+    resizeMode: "cover",
+  },
+  dateButton: {
+    borderWidth: 1,
+    borderColor: "#9747FF",
+    borderRadius: 20,
+    padding: 12,
+    marginBottom: 15,
+    backgroundColor: "#fff",
+  },
+  submitButton: {
+    backgroundColor: "#9747FF",
+    borderRadius: 20,
+    width: "100%",
+    height: 50,
+    alignItems: "center",
+    marginBottom: 20,
+    marginTop: 20,
+    justifyContent: "center",
+  },
   submitText: { color: "#fff", fontSize: 17, fontFamily: "Kanit-SemiBold" },
 });

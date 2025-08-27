@@ -33,6 +33,11 @@ import RegisterFormMatchTwoScreen from "./src/Organizer/RegisterFormMatchTwoScre
 import RegisterFormMatchQRScreen from "./src/Organizer/RegisterFormMatchQRScreen";
 import LoadingPaymentOScreen from "./src/Organizer/LoadingPaymentOScreen";
 import DrawScreen from "./src/Organizer/DrawScreen";
+import DrawTwoScreen from "./src/Organizer/DrawTwoScreen";
+import ScheduleScreen from "./src/Organizer/ScheduleScreen";
+import ManagerCreOScreen from "./src/Organizer/ManagerCreOScreen";
+import ControlMatchScreen from "./src/Organizer/ControlMatchScreen";
+import ControlOthersScreen from "./src/Organizer/ControlOthersScreen";
 SplashScreen.preventAutoHideAsync();
 
 const Stack = createNativeStackNavigator();
@@ -56,12 +61,15 @@ export default function App() {
   }
 
   return (
-    <View style={{ flex: 1 }} onLayout={onLayoutRootView} >
+    <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
       <NavigationContainer>
-        <Stack.Navigator initialRouteName="Login"  screenOptions={{
-        gestureEnabled: false, 
-        headerShown: false,   
-      }}>
+        <Stack.Navigator
+          initialRouteName="Login"
+          screenOptions={{
+            gestureEnabled: false,
+            headerShown: false,
+          }}
+        >
           <Stack.Screen
             name="Login"
             component={LoginScreen}
@@ -127,7 +135,7 @@ export default function App() {
             component={HistoryScreen}
             options={{ headerShown: false }}
           />
-          
+
           <Stack.Screen
             name="Organizerform"
             component={OrganizerFormScreen}
@@ -142,8 +150,8 @@ export default function App() {
             name="RegisterCompetition"
             component={RegisterCompetitionScreen}
             options={{ headerShown: false }}
-          /> 
-           <Stack.Screen
+          />
+          <Stack.Screen
             name="HomeO"
             component={NavbarO}
             options={{ headerShown: false }}
@@ -163,7 +171,7 @@ export default function App() {
             component={ListPlayerScreen}
             options={{ headerShown: false }}
           />
-           <Stack.Screen
+          <Stack.Screen
             name="LoadingPayment"
             component={LoadingPaymentScreen}
             options={{ headerShown: false }}
@@ -193,12 +201,36 @@ export default function App() {
             component={LoadingPaymentOScreen}
             options={{ headerShown: false }}
           />
-<Stack.Screen
+          <Stack.Screen
             name="DrawScreen"
             component={DrawScreen}
             options={{ headerShown: false }}
           />
-
+          <Stack.Screen
+            name="DrawTwoScreen"
+            component={DrawTwoScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="ScheduleScreen"
+            component={ScheduleScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="ManagerCreO"
+            component={ManagerCreOScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="ControlMatchScreen"
+            component={ControlMatchScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="ControlOthersScreen"
+            component={ControlOthersScreen}
+            options={{ headerShown: false }}
+          />
         </Stack.Navigator>
       </NavigationContainer>
     </View>

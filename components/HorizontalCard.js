@@ -5,6 +5,7 @@ import { useNavigation } from "@react-navigation/native";
 export default function HorizontalCard({
   match = {},
   isRegistered = false,
+  disabled = false, // ✅ เพิ่ม prop disabled
   borderColor = '#07F469',
   buttonColor = '#154127',
   buttonTextColor = '#07F469',
@@ -15,11 +16,12 @@ export default function HorizontalCard({
   const navigation = useNavigation();
 
   const handleRegister = () => {
-    navigation.navigate("Detail", { match }); // ส่ง match object ทั้งหมด
+    if (disabled) return; // ถ้า disabled ไม่ให้ทำงาน
+    navigation.navigate("Detail", { match }); 
   };
 
   return (
-    <View style={[styles.card, { borderColor }]}>
+    <View style={[styles.card, { borderColor, opacity: disabled ? 0.5 : 1 }]}>
       <Image
         source={match.promoImage ? { uri: match.promoImage } : require("../assets/f1.jpg")}
         style={styles.image}
@@ -38,18 +40,20 @@ export default function HorizontalCard({
           <TouchableOpacity
             style={[
               styles.registerButton,
-              { backgroundColor: isRegistered ? registeredButtonColor : buttonColor },
+              { 
+                backgroundColor: isRegistered || disabled ? registeredButtonColor : buttonColor,
+              },
             ]}
             onPress={handleRegister}
-            disabled={isRegistered}
+            disabled={isRegistered || disabled} // ✅ ปิดปุ่มถ้าเต็มหรือสมัครแล้ว
           >
             <Text
               style={[
                 styles.registerText,
-                { color: isRegistered ? registeredButtonTextColor : buttonTextColor },
+                { color: isRegistered || disabled ? registeredButtonTextColor : buttonTextColor },
               ]}
             >
-              {isRegistered ? "สมัครแล้ว" : "สมัครเลย"}
+              {isRegistered ? "สมัครแล้ว" : disabled ? "เต็มแล้ว" : "สมัครเลย"} 
             </Text>
           </TouchableOpacity>
         </View>
@@ -57,6 +61,7 @@ export default function HorizontalCard({
     </View>
   );
 }
+
 
 const styles = StyleSheet.create({
   card: {

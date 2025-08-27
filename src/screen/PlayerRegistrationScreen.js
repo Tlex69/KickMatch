@@ -9,6 +9,7 @@ import {
   TextInput,
   Image,
   ScrollView,
+  Alert,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
@@ -16,6 +17,10 @@ import { LinearGradient } from "expo-linear-gradient";
 import { FormLine } from "../../components/icon/FormLine";
 import * as ImagePicker from "expo-image-picker";
 import { Dropdown } from "react-native-element-dropdown";
+
+// 👇 import firebase
+import { doc, setDoc } from "firebase/firestore";
+import { db } from "../../firebase";
 
 export default function PlayerRegistrationScreen() {
   const navigation = useNavigation();
@@ -56,20 +61,37 @@ export default function PlayerRegistrationScreen() {
     setPlayerNumbers(newNumbers);
   };
 
-  const handleSubmit = () => {
+  // 👇 save players to firestore
+  const handleSubmit = async () => {
     const players = playerNames.map((name, index) => ({
       name,
       number: playerNumbers[index],
       image: playerImages[index],
     }));
 
-    // ส่งข้อมูลทั้งหมดไป PaymentScreen
-    navigation.navigate("Payment", {
-      match,
-      teamId,
-      teamData,
-      players,
-    });
+    try {
+      await setDoc(
+        doc(db, "teams", teamId),
+        {
+          ...teamData,
+          players: players,
+        },
+        { merge: true }
+      );
+
+      Alert.alert("สำเร็จ", "บันทึกข้อมูลนักเตะเรียบร้อยแล้ว");
+
+      // ส่งต่อไป PaymentScreen
+      navigation.navigate("Payment", {
+        match,
+        teamId,
+        teamData,
+        players,
+      });
+    } catch (error) {
+      console.error("Error saving players: ", error);
+      Alert.alert("ผิดพลาด", "ไม่สามารถบันทึกนักเตะได้");
+    }
   };
 
   return (
@@ -175,7 +197,6 @@ export default function PlayerRegistrationScreen() {
     </View>
   );
 }
-
 
 const styles = StyleSheet.create({
   container: {
