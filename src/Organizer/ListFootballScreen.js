@@ -263,7 +263,7 @@ export default function ListFootballScreen() {
                   <AntDesign name="right" size={18} color="#07F469" />
                 </TouchableOpacity>
 
-               
+                
                 <TouchableOpacity
                   style={styles.fullWidthButton}
                   onPress={() =>

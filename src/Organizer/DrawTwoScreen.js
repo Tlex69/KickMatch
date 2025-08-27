@@ -1,31 +1,30 @@
-// 🔹 DrawTwoScreen.js
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  ActivityIndicator,
-  Image,
-  StatusBar,
-  SafeAreaView,
-  TouchableOpacity,
-  Alert,
-} from "react-native";
-import { db } from "../../firebase";
+import { MaterialIcons } from "@expo/vector-icons";
+import { useNavigation, useRoute } from "@react-navigation/native";
+import { LinearGradient } from "expo-linear-gradient";
 import {
   collection,
-  getDocs,
   doc,
   getDoc,
+  getDocs,
   query,
-  where,
   setDoc,
+  where,
 } from "firebase/firestore";
-import { useRoute, useNavigation } from "@react-navigation/native";
-import { LinearGradient } from "expo-linear-gradient";
-import { MaterialIcons } from "@expo/vector-icons";
+import { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import DiceIcon from "../../components/icon/DiceIcon";
+import { db } from "../../firebase";
 
 export default function DrawTwoScreen() {
   const route = useRoute();
@@ -99,20 +98,6 @@ export default function DrawTwoScreen() {
           currentTime = new Date(currentTime.getTime() + 55 * 60000);
         }
 
-        tempPairs.push({
-          teamA: { teamName: "แพ้คู่ 1" },
-          teamB: { teamName: "แพ้คู่ 2" },
-          matchTime: new Date(currentTime),
-          round: "รอบรองชนะเลิศ",
-        });
-        currentTime = new Date(currentTime.getTime() + 55 * 60000);
-
-        tempPairs.push({
-          teamA: { teamName: "ชนะคู่ 1" },
-          teamB: { teamName: "ชนะคู่ 2" },
-          matchTime: new Date(currentTime),
-          round: "รอบชิงชนะเลิศ",
-        });
 
         setPairs(tempPairs);
         setTeams(teamsData);

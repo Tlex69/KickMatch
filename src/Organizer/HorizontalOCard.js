@@ -39,8 +39,9 @@ export default function HorizontalCard({
           <TouchableOpacity
             style={styles.registerButton}
             onPress={handleRegister}
+            disabled={true}
           >
-            <Text style={styles.registerText}>รายละเอียด</Text>
+            <Text style={styles.registerText}>สถานะ</Text>
           </TouchableOpacity>
 
           <TouchableOpacity

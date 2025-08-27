@@ -1,40 +1,40 @@
-import React, { useState, useRef, useEffect } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  StatusBar,
-  ScrollView,
-  SafeAreaView,
-  Image,
-  TouchableOpacity,
-  Animated,
-  Alert,
-} from "react-native";
-import { useRoute, useNavigation } from "@react-navigation/native";
+import { AntDesign, MaterialIcons } from "@expo/vector-icons";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
-import { MaterialIcons, AntDesign } from "@expo/vector-icons";
+import { useEffect, useRef, useState } from "react";
+import {
+  Alert,
+  Animated,
+  Image,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { FootballIcon } from "../../components/icon/FootballIcon";
 
 // Firebase
-import { db } from "../../firebase";
 import {
   collection,
   doc,
   getDocs,
   query,
-  where,
   setDoc,
-  updateDoc,
+  where,
 } from "firebase/firestore";
+import { db } from "../../firebase";
 
 export default function ControlMatchScreen() {
   const route = useRoute();
   const navigation = useNavigation();
-  const { match, fullname, matchId, teamA, teamB } = route.params;
+  const { match, fullname, matchId } = route.params;
 
   const [scoreA, setScoreA] = useState(0);
   const [scoreB, setScoreB] = useState(0);
+  const [isEnded, setIsEnded] = useState(false);
 
   const shakeAnimA = useRef(new Animated.Value(0)).current;
   const shakeAnimB = useRef(new Animated.Value(0)).current;
@@ -69,9 +69,9 @@ export default function ControlMatchScreen() {
     else shake(anim);
   };
 
+  // โหลดสกอร์ + สถานะจาก Firestore
   const fetchScores = async () => {
     if (!matchId) return;
-
     try {
       const resultsCol = collection(db, "results");
       const q = query(resultsCol, where("matchId", "==", matchId));
@@ -80,11 +80,12 @@ export default function ControlMatchScreen() {
       querySnap.forEach((docSnap) => {
         const data = docSnap.data();
         if (
-          data.teamAId === match.teamA.id &&
-          data.teamBId === match.teamB.id
+          data.teamAId === match.teamA?.id &&
+          data.teamBId === match.teamB?.id
         ) {
           setScoreA(data.scoreA || 0);
           setScoreB(data.scoreB || 0);
+          setIsEnded(data.isEnded || false);
         }
       });
     } catch (error) {
@@ -96,67 +97,38 @@ export default function ControlMatchScreen() {
     fetchScores();
   }, []);
 
+  // อัพเดทผลล่าสุด
   const handleUpdateScore = async () => {
+    if (isEnded) return; // ปิดถ้าแมทจบแล้ว
     if (!matchId || !match.teamA?.id) {
-      console.log("ข้อมูลทีมไม่สมบูรณ์", match);
       Alert.alert("ผิดพลาด", "ไม่พบข้อมูลทีม A");
       return;
     }
 
     try {
-      const resultsCol = collection(db, "results");
-      let querySnap;
-
-      if (match.teamB?.id) {
-        const q = query(
-          resultsCol,
-          where("matchId", "==", matchId),
-          where("teamAId", "==", match.teamA.id),
-          where("teamBId", "==", match.teamB.id)
-        );
-        querySnap = await getDocs(q);
-      } else {
-        // กรณีทีม B ไม่มี ให้ดึงเฉพาะ teamA
-        const q = query(
-          resultsCol,
-          where("matchId", "==", matchId),
-          where("teamAId", "==", match.teamA.id)
-        );
-        querySnap = await getDocs(q);
-      }
-
       const now = new Date();
+      const resultRef = doc(
+        db,
+        "results",
+        `${matchId}_${match.teamA.id}_${match.teamB?.id || "null"}`
+      );
 
-      if (!querySnap.empty) {
-        const docId = querySnap.docs[0].id;
-        const resultRef = doc(db, "results", docId);
-        await setDoc(
-          resultRef,
-          {
-            matchId,
-            teamAId: match.teamA.id,
-            teamBId: match.teamB?.id || null,
-            teamA: match.teamA.teamName,
-            teamB: match.teamB?.teamName || null,
-            scoreA,
-            scoreB,
-            updatedAt: now,
-          },
-          { merge: true }
-        );
-      } else {
-        const newResultRef = doc(resultsCol);
-        await setDoc(newResultRef, {
+      await setDoc(
+        resultRef,
+        {
           matchId,
           teamAId: match.teamA.id,
           teamBId: match.teamB?.id || null,
           teamA: match.teamA.teamName,
           teamB: match.teamB?.teamName || null,
+          teamALogo: match.teamA?.teamLogo || null,
+          teamBLogo: match.teamB?.teamLogo || null,
           scoreA,
           scoreB,
           updatedAt: now,
-        });
-      }
+        },
+        { merge: true }
+      );
 
       Alert.alert("สำเร็จ", "อัพเดทผลการแข่งขันแล้ว ✅");
     } catch (error) {
@@ -165,58 +137,71 @@ export default function ControlMatchScreen() {
     }
   };
 
+  // จบการแข่งขัน
   const handleEndMatch = async () => {
-  if (!matchId) return;
+    if (isEnded) return; // ปิดถ้าแมทจบแล้ว
+    if (!matchId) return;
 
-  try {
-    let winner = null;
-    let loser = null;
+    try {
+      let winner = null;
+      let loser = null;
 
-    // กำหนดผู้ชนะ/แพ้
-    if (scoreA > scoreB) {
-      winner = match.teamA;
-      loser = match.teamB;
-    } else if (scoreB > scoreA) {
-      winner = match.teamB;
-      loser = match.teamA;
-    } else {
-      // กรณีเสมอ ให้เลือก teamA เป็นผู้ชนะโดยปริยาย
-      winner = match.teamA;
-      loser = match.teamB;
+      if (scoreA > scoreB) {
+        winner = match.teamA;
+        loser = match.teamB;
+      } else if (scoreB > scoreA) {
+        winner = match.teamB;
+        loser = match.teamA;
+      } else {
+        winner = match.teamA; // เสมอ → teamA เป็นผู้ชนะโดยปริยาย
+        loser = match.teamB;
+      }
+
+      const matchRef = doc(
+        db,
+        "results",
+        `${matchId}_${match.teamA.id}_${match.teamB?.id || "null"}`
+      );
+
+      await setDoc(
+        matchRef,
+        {
+          matchId,
+          teamAId: match.teamA.id,
+          teamBId: match.teamB?.id || null,
+          teamA: match.teamA.teamName,
+          teamB: match.teamB?.teamName || null,
+          teamALogo: match.teamA?.teamLogo || null,
+          teamBLogo: match.teamB?.teamLogo || null,
+          scoreA,
+          scoreB,
+          winner: winner?.teamName || null,
+          winnerId: winner?.id || null,
+          winnerLogo: winner?.teamLogo || null,
+          loser: loser?.teamName || null,
+          loserId: loser?.id || null,
+          loserLogo: loser?.teamLogo || null,
+          isEnded: true, // สำคัญ
+          endedAt: new Date(),
+        },
+        { merge: true }
+      );
+
+      setIsEnded(true);
+
+      Alert.alert(
+        "สำเร็จ",
+        `การแข่งขันสิ้นสุดแล้ว\nผู้ชนะ: ${winner?.teamName}\nผู้แพ้: ${
+          loser?.teamName || "ไม่มี"
+        }`
+      );
+
+      navigation.goBack();
+    } catch (error) {
+      console.error("End Match Error:", error);
+      Alert.alert("ผิดพลาด", "ไม่สามารถจบการแข่งขันได้");
     }
-
-    const matchRef = doc(db, "results", `${matchId}_${match.teamA.id}_${match.teamB?.id || "null"}`);
-
-    await setDoc(
-      matchRef,
-      {
-        matchId,
-        teamAId: match.teamA.id,
-        teamBId: match.teamB?.id || null,
-        teamA: match.teamA.teamName,
-        teamB: match.teamB?.teamName || null,
-        scoreA,
-        scoreB,
-        winner: winner.teamName,
-        winnerId: winner.id,
-        loser: loser?.teamName || null,
-        loserId: loser?.id || null,
-        endedAt: new Date(),
-      },
-      { merge: true }
-    );
-
-    Alert.alert(
-      "สำเร็จ",
-      `การแข่งขันสิ้นสุดแล้ว\nผู้ชนะ: ${winner.teamName}\nผู้แพ้: ${loser?.teamName || "ไม่มี"}`
-    );
-
-    navigation.goBack();
-  } catch (error) {
-    console.error("End Match Error:", error);
-    Alert.alert("ผิดพลาด", "ไม่สามารถจบการแข่งขันได้");
-  }
-};
+  };
 
   if (!match)
     return (
@@ -229,6 +214,7 @@ export default function ControlMatchScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor="#07F469" barStyle="light-content" />
 
+      {/* Header */}
       <LinearGradient
         colors={["#14141400", "#07F469"]}
         style={styles.headerBox}
@@ -250,6 +236,7 @@ export default function ControlMatchScreen() {
         </View>
       </LinearGradient>
 
+      {/* Match content */}
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 180 }}>
         <View style={styles.matchBox}>
           {/* ทีม A */}
@@ -273,26 +260,27 @@ export default function ControlMatchScreen() {
               <Text style={styles.scoreText}>{scoreA}</Text>
             </Animated.View>
 
-            <View style={styles.buttonRow}>
-              <TouchableOpacity
-                onPress={() => setScoreA(scoreA + 1)}
-                style={styles.iconButton}
-              >
-                <MaterialIcons name="add" size={15} color="#07F469" />
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => decrementScore(scoreA, setScoreA, shakeAnimA)}
-                style={styles.iconButton}
-              >
-                <MaterialIcons name="remove" size={15} color="#07F469" />
-              </TouchableOpacity>
-            </View>
+            {!isEnded && (
+              <View style={styles.buttonRow}>
+                <TouchableOpacity
+                  onPress={() => setScoreA(scoreA + 1)}
+                  style={styles.iconButton}
+                >
+                  <MaterialIcons name="add" size={15} color="#07F469" />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => decrementScore(scoreA, setScoreA, shakeAnimA)}
+                  style={styles.iconButton}
+                >
+                  <MaterialIcons name="remove" size={15} color="#07F469" />
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
 
           {/* VS */}
           <View style={{ alignItems: "center" }}>
             <Text style={styles.vsText}>VS</Text>
-            <View style={styles.scoreDivider} />
           </View>
 
           {/* ทีม B */}
@@ -316,23 +304,26 @@ export default function ControlMatchScreen() {
               <Text style={styles.scoreText}>{scoreB}</Text>
             </Animated.View>
 
-            <View style={styles.buttonRow}>
-              <TouchableOpacity
-                onPress={() => setScoreB(scoreB + 1)}
-                style={styles.iconButton}
-              >
-                <MaterialIcons name="add" size={15} color="#07F469" />
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => decrementScore(scoreB, setScoreB, shakeAnimB)}
-                style={styles.iconButton}
-              >
-                <MaterialIcons name="remove" size={15} color="#07F469" />
-              </TouchableOpacity>
-            </View>
+            {!isEnded && (
+              <View style={styles.buttonRow}>
+                <TouchableOpacity
+                  onPress={() => setScoreB(scoreB + 1)}
+                  style={styles.iconButton}
+                >
+                  <MaterialIcons name="add" size={15} color="#07F469" />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => decrementScore(scoreB, setScoreB, shakeAnimB)}
+                  style={styles.iconButton}
+                >
+                  <MaterialIcons name="remove" size={15} color="#07F469" />
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         </View>
 
+        {/* กล่องจัดการผลอื่นๆ */}
         <View style={styles.boxtitle}>
           <Text style={styles.title}>ควบคุมอื่นๆ</Text>
         </View>
@@ -344,7 +335,6 @@ export default function ControlMatchScreen() {
               { ...match.teamA, players: match.teamA?.players || [] },
               { ...match.teamB, players: match.teamB?.players || [] },
             ];
-
             navigation.navigate("ControlOthersScreen", {
               match,
               fullname,
@@ -360,22 +350,29 @@ export default function ControlMatchScreen() {
         </TouchableOpacity>
       </ScrollView>
 
+      {/* Bottom buttons */}
       <View style={styles.bottomButtons}>
-        <Text style={styles.buttonSubText}>
-          *อัพเดทผลล่าสุดเพื่อให้ผู้ใช้ได้รู้ผลการแข่งขัน*
-        </Text>
-        <TouchableOpacity
-          style={styles.updateButton}
-          onPress={handleUpdateScore}
-        >
-          <Text style={styles.buttonupText}>อัพเดทผลล่าสุด</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.endmatch, { marginTop: 10 }]}
-          onPress={handleEndMatch}
-        >
-          <Text style={styles.buttonendText}>จบการแข่งขัน</Text>
-        </TouchableOpacity>
+        {isEnded ? (
+          <Text style={styles.buttonSubText}>การแข่งขันนี้สิ้นสุดแล้ว ✅</Text>
+        ) : (
+          <>
+            <Text style={styles.buttonSubText}>
+              *อัพเดทผลล่าสุดเพื่อให้ผู้ใช้ได้รู้ผลการแข่งขัน*
+            </Text>
+            <TouchableOpacity
+              style={styles.updateButton}
+              onPress={handleUpdateScore}
+            >
+              <Text style={styles.buttonupText}>อัพเดทผลล่าสุด</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.endmatch, { marginTop: 10 }]}
+              onPress={handleEndMatch}
+            >
+              <Text style={styles.buttonendText}>จบการแข่งขัน</Text>
+            </TouchableOpacity>
+          </>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -400,33 +397,17 @@ const styles = StyleSheet.create({
   },
   headerContent: { flexDirection: "row", alignItems: "center" },
   textBox: { flex: 1, alignItems: "flex-end", marginEnd: 10 },
-  titleText: { color: "#fff", fontSize: 13, fontFamily: "Kanit-SemiBold" },
-  subTitleText: { color: "#fff", fontSize: 13, fontFamily: "Kanit-SemiBold" },
+   titleText: { color: "#fff", fontSize: 14, fontFamily: "Kanit-SemiBold" },
+  subTitleText: { color: "#fff", fontSize: 14, fontFamily: "Kanit-SemiBold" },
   matchBox: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    padding: 20,
-    width: "100%",
-    borderRadius: 15,
-    marginBottom: 10,
-    marginTop: -10,
   },
   teamBox: { alignItems: "center", flex: 1 },
   teamLogo: { width: 65, height: 70, borderRadius: 20, marginBottom: 15 },
-  teamName: {
-    color: "#07F469",
-    fontSize: 14,
-    textAlign: "center",
-    fontFamily: "Kanit-SemiBold",
-    marginBottom: 5,
-  },
-  vsText: {
-    color: "#07F469",
-    fontSize: 30,
-    fontFamily: "MuseoModerno-Bold",
-    marginTop: 30,
-  },
+  teamName: { color: "#07F469", fontSize: 14, marginBottom: 5, fontFamily: "Kanit-SemiBold", textAlign: "center" },
+  vsText: { color: "#07F469", fontSize: 30, marginTop: 30, fontFamily: "MuseoModerno-SemiBold" },
   scoreBox: {
     backgroundColor: "#154127",
     borderWidth: 1,
@@ -436,10 +417,8 @@ const styles = StyleSheet.create({
     height: 105,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 5,
-    marginTop: 5,
   },
-  scoreText: { color: "#07F469", fontSize: 40, fontFamily: "Kanit-SemiBold" },
+  scoreText: { color: "#07F469", fontSize: 40,fontFamily: "Kanit-SemiBold" },
   buttonRow: { flexDirection: "row", justifyContent: "center", marginTop: 2 },
   iconButton: {
     backgroundColor: "#154127",
@@ -448,18 +427,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 5,
     marginHorizontal: 5,
-    alignItems: "center",
-    justifyContent: "center",
     width: 40,
     height: 25,
-  },
-  scoreDivider: {
-    width: 25,
-    height: 4,
-    backgroundColor: "#07F469",
-    alignSelf: "center",
-    marginTop: 80,
-    borderRadius: 2,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 5,
   },
   boxtitle: {
     backgroundColor: "#202020",
@@ -468,6 +440,7 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     marginBottom: 10,
     alignSelf: "flex-start",
+    marginTop: 22,
   },
   title: { color: "#07F469", fontSize: 12, fontFamily: "Kanit-SemiBold" },
   fullWidthButton: {
@@ -494,38 +467,24 @@ const styles = StyleSheet.create({
   buttonSubText: {
     color: "#07F469",
     fontSize: 10,
-    fontFamily: "Kanit-Regular",
     textAlign: "center",
     marginBottom: 6,
+    fontFamily: "Kanit-Regular",
   },
   updateButton: {
     width: "100%",
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
     paddingVertical: 14,
     borderRadius: 25,
     backgroundColor: "#07F469",
+    alignItems: "center",
   },
-  buttonupText: {
-    color: "#154127",
-    fontSize: 16,
-    fontFamily: "Kanit-SemiBold",
-    textAlign: "center",
-  },
+  buttonupText: { color: "#154127", fontSize: 16, fontFamily: "Kanit-SemiBold" },
   endmatch: {
     width: "100%",
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
     paddingVertical: 14,
     borderRadius: 25,
     backgroundColor: "#F44607",
+    alignItems: "center",
   },
-  buttonendText: {
-    color: "#fff",
-    fontSize: 16,
-    fontFamily: "Kanit-SemiBold",
-    textAlign: "center",
-  },
+  buttonendText: { color: "#fff", fontSize: 16, fontFamily: "Kanit-SemiBold" },
 });
