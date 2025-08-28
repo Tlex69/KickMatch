@@ -21,7 +21,7 @@ export default function HorizontalCard({
   };
 
   const handleStart = () => {
-    if (!canStart) return;
+    if (!canStart) return; 
 
     setStatus("in_progress"); 
     if (onStartPress) onStartPress(matchId); 
