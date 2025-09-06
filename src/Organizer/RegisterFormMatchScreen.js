@@ -62,7 +62,7 @@ export default function RegisterFormMatchScreen({ navigation }) {
   const category2Options = [
     { label: "บอลลีก", value: "บอลลีก" },
     { label: "บอลถ้วย", value: "บอลถ้วย" },
-    { label: "ลีกคัพ", value: "ลีกคัพ" },
+    { label: "ลีกคัพ", value: "ลีกคัพ"  },
   ];
 
   const handlePickPromoImage = async () => {
@@ -70,7 +70,7 @@ export default function RegisterFormMatchScreen({ navigation }) {
       await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permissionResult.granted) {
       Alert.alert("ต้องการสิทธิ์เข้าถึงรูปภาพ");
-      return;
+      return; 
     }
     let pickerResult = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
