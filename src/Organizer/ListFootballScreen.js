@@ -215,7 +215,7 @@ export default function ListFootballScreen() {
                   style={styles.rightBox}
                 >
                   <View style={styles.rightBoxContent}>
-                    <Text style={styles.boxLabely}>จำนวนทีมที่ขายแล้ว</Text>
+                    <Text style={styles.boxLabely}>จำนวนทีมที่พร้อมแล้ว</Text>
                     <CupBrokenIcon size={60} color="#fff" />
                     <Text style={styles.boxNumbery}>
                       {comp.totalTeams}/{comp.teamAmount || 0}{" "}
@@ -263,7 +263,8 @@ export default function ListFootballScreen() {
                   <AntDesign name="right" size={18} color="#07F469" />
                 </TouchableOpacity>
 
-                {comp.category2 === "บอลลีก" && (
+                {(comp.category2 === "บอลลีก" ||
+                  comp.category2 === "ลีกคัพ") && (
                   <TouchableOpacity
                     style={styles.fullWidthButton}
                     onPress={() =>
