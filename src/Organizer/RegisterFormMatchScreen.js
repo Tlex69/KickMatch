@@ -47,7 +47,6 @@ export default function RegisterFormMatchScreen({ navigation }) {
   const teamAmountOptions = [
     { label: "4 ทีม", value: 4 },
     { label: "8 ทีม", value: 8 },
-    { label: "12 ทีม", value: 12 },
     { label: "16 ทีม", value: 16 },
     { label: "32 ทีม", value: 32 },
     { label: "36 ทีม", value: 36 },

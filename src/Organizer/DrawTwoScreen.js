@@ -104,20 +104,29 @@ export default function DrawTwoScreen() {
             tempGroups.push(teamsData.slice(i, i + groupSize));
           }
 
-          tempGroups.forEach((group, gIndex) => {
-            const groupName = `กลุ่ม ${String.fromCharCode(65 + gIndex)}`;
-            for (let i = 0; i < group.length; i++) {
-              for (let j = i + 1; j < group.length; j++) {
-                tempPairs.push({
-                  teamA: group[i],
-                  teamB: group[j],
-                  matchTime: new Date(startTime),
-                  round: groupName,
-                });
-                startTime = new Date(startTime.getTime() + 55 * 60000);
-              }
-            }
-          });
+          let maxMatchesPerGroup = Math.max(...tempGroups.map(g => g.length * (g.length - 1) / 2));
+for (let roundIndex = 0; roundIndex < maxMatchesPerGroup; roundIndex++) {
+  tempGroups.forEach((group, gIndex) => {
+    const groupName = `กลุ่ม ${String.fromCharCode(65 + gIndex)}`;
+    // สร้างคู่แบบ round-robin สำหรับแต่ละกลุ่ม
+    let matches = [];
+    for (let i = 0; i < group.length; i++) {
+      for (let j = i + 1; j < group.length; j++) {
+        matches.push({ teamA: group[i], teamB: group[j] });
+      }
+    }
+    if (matches[roundIndex]) {
+      tempPairs.push({
+        teamA: matches[roundIndex].teamA,
+        teamB: matches[roundIndex].teamB,
+        matchTime: new Date(startTime),
+        round: groupName,
+      });
+      startTime = new Date(startTime.getTime() + 55 * 60000);
+    }
+  });
+}
+
         } else {
           // ✅ knockout: สุ่มทีมจับคู่
           for (let i = teamsData.length - 1; i > 0; i--) {
@@ -152,30 +161,51 @@ export default function DrawTwoScreen() {
   }, [matchId]);
 
   const handleSaveDraw = async () => {
-    if (!pairs.length) return;
-    setSaving(true);
-    try {
-      const drawRef = doc(db, "draws", matchId);
-      await setDoc(drawRef, {
-        matchId,
-        pairs: pairs.map((pair) => ({
-          teamA: pair.teamA,
-          teamB: pair.teamB,
-          round: pair.round,
-          matchTime: pair.matchTime.toISOString(),
-        })),
+  if (!pairs.length) return;
+  setSaving(true);
+  try {
+    const drawRef = doc(db, "draws", matchId);
+    await setDoc(drawRef, {
+      matchId,
+      pairs: pairs.map((pair) => ({
+        teamA: pair.teamA,
+        teamB: pair.teamB,
+        round: pair.round,
+        matchTime: pair.matchTime.toISOString(),
+      })),
+    });
+
+    if (matchData?.category2 === "ลีกคัพ" && groups.length) {
+      const groupRef = doc(db, "groups", matchId);
+      const groupData = {};
+
+      groups.forEach((group, gIndex) => {
+        const groupName = String.fromCharCode(65 + gIndex); 
+        groupData[groupName] = group.map((team) => ({
+          id: team.id,
+          teamName: team.teamName,
+          teamLogo: team.teamLogo,
+          teamColor: team.teamColor,
+        }));
       });
 
-      Alert.alert("สำเร็จ", "บันทึกการจับฉลากเรียบร้อยแล้ว", [
-        { text: "ตกลง", onPress: () => navigation.navigate("HomeO") },
-      ]);
-    } catch (error) {
-      console.log("Error saving draw:", error);
-      Alert.alert("ผิดพลาด", "ไม่สามารถบันทึกการจับฉลากได้");
-    } finally {
-      setSaving(false);
+      await setDoc(groupRef, {
+        matchId,
+        groups: groupData,
+      });
     }
-  };
+
+    Alert.alert("สำเร็จ", "บันทึกการจับฉลากเรียบร้อยแล้ว", [
+      { text: "ตกลง", onPress: () => navigation.navigate("HomeO") },
+    ]);
+  } catch (error) {
+    console.log("Error saving draw:", error);
+    Alert.alert("ผิดพลาด", "ไม่สามารถบันทึกการจับฉลากได้");
+  } finally {
+    setSaving(false);
+  }
+};
+
 
   if (loading) {
     return (
@@ -354,7 +384,7 @@ const styles = StyleSheet.create({
   groupTeam: { alignItems: "center", marginHorizontal: 5 },
   groupLogo: { width: 50, height: 50, borderRadius: 10, marginBottom: 5 },
   groupTeamName: {
-    color: "#fff",
+    color: "#07F469",
     fontSize: 10,
     textAlign: "center",
     fontFamily: "Kanit-Regular",

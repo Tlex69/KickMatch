@@ -82,7 +82,7 @@ export default function ControlMatchScreen() {
 
   // อัพเดทผลล่าสุด
   const handleUpdateScore = async () => {
-    if (isEnded) return; // ปิดถ้าแมทจบแล้ว
+    if (isEnded) return;
     if (!matchId || !match.teamA?.id) {
       Alert.alert("ผิดพลาด", "ไม่พบข้อมูลทีม A");
       return;
@@ -120,20 +120,29 @@ export default function ControlMatchScreen() {
     }
   };
 
-  // ฟังก์ชันอัพเดทคะแนนลีก standings
-  const updateLeaguePoints = async (teamId, teamName, teamLogo, points) => {
+  // ฟังก์ชันอัพเดทคะแนนลีก standings (ส่งสถิติทั้งหมด)
+  const updateLeaguePoints = async (teamId, teamName, teamLogo, stats) => {
     if (!teamId) return;
-
     try {
       const teamRef = doc(db, "standings", teamId);
       const teamSnap = await getDoc(teamRef);
 
       if (teamSnap.exists()) {
-        const currentPoints = teamSnap.data().points || 0;
+        const current = teamSnap.data();
         await updateDoc(teamRef, {
-          points: currentPoints + points,
           teamName,
           teamLogo,
+          played: (current.played || 0) + 1,
+          win: (current.win || 0) + stats.win,
+          draw: (current.draw || 0) + stats.draw,
+          lose: (current.lose || 0) + stats.lose,
+          goalsFor: (current.goalsFor || 0) + stats.goalsFor,
+          goalsAgainst: (current.goalsAgainst || 0) + stats.goalsAgainst,
+          goalDifference:
+            (current.goalsFor || 0) +
+            stats.goalsFor -
+            ((current.goalsAgainst || 0) + stats.goalsAgainst),
+          points: (current.points || 0) + stats.points,
           updatedAt: new Date(),
         });
       } else {
@@ -141,7 +150,14 @@ export default function ControlMatchScreen() {
           teamId,
           teamName,
           teamLogo,
-          points: points,
+          played: 1,
+          win: stats.win,
+          draw: stats.draw,
+          lose: stats.lose,
+          goalsFor: stats.goalsFor,
+          goalsAgainst: stats.goalsAgainst,
+          goalDifference: stats.goalsFor - stats.goalsAgainst,
+          points: stats.points,
           updatedAt: new Date(),
         });
       }
@@ -150,77 +166,109 @@ export default function ControlMatchScreen() {
     }
   };
 
-  // จบการแข่งขัน
   const handleEndMatch = async () => {
-    if (isEnded) return; // ปิดถ้าแมทจบแล้ว
-    if (!matchId) return;
+  if (isEnded) return;
+  if (!matchId) return;
 
-    try {
-      let winner = null;
-      let loser = null;
+  try {
+    let winner = null;
+    let loser = null;
 
-      if (scoreA > scoreB) {
-        winner = match.teamA;
-        loser = match.teamB;
-      } else if (scoreB > scoreA) {
-        winner = match.teamB;
-        loser = match.teamA;
-      } else {
-        winner = null; // เสมอ
-        loser = null;
-      }
-
-      const matchRef = doc(
-        db,
-        "results",
-        `${matchId}_${match.teamA.id}_${match.teamB?.id || "null"}`
-      );
-
-      await setDoc(
-        matchRef,
-        {
-          matchId,
-          teamAId: match.teamA.id,
-          teamBId: match.teamB?.id || null,
-          teamA: match.teamA.teamName,
-          teamB: match.teamB?.teamName || null,
-          teamALogo: match.teamA?.teamLogo || null,
-          teamBLogo: match.teamB?.teamLogo || null,
-          scoreA,
-          scoreB,
-          winner: winner?.teamName || null,
-          loser: loser?.teamName || null,
-          isEnded: true,
-          endedAt: new Date(),
-        },
-        { merge: true }
-      );
-
-      // ✅ อัพเดท standings (3 แต้มชนะ / 1 แต้มเสมอ / 0 แต้มแพ้)
-      if (scoreA > scoreB) {
-        await updateLeaguePoints(match.teamA.id, match.teamA.teamName, match.teamA?.teamLogo, 3);
-        await updateLeaguePoints(match.teamB.id, match.teamB.teamName, match.teamB?.teamLogo, 0);
-      } else if (scoreB > scoreA) {
-        await updateLeaguePoints(match.teamB.id, match.teamB.teamName, match.teamB?.teamLogo, 3);
-        await updateLeaguePoints(match.teamA.id, match.teamA.teamName, match.teamA?.teamLogo, 0);
-      } else {
-        await updateLeaguePoints(match.teamA.id, match.teamA.teamName, match.teamA?.teamLogo, 1);
-        await updateLeaguePoints(match.teamB.id, match.teamB.teamName, match.teamB?.teamLogo, 1);
-      }
-
-      setIsEnded(true);
-
-      Alert.alert(
-        "สำเร็จ",
-        `การแข่งขันสิ้นสุดแล้ว\nผล: ${scoreA} - ${scoreB}`
-      );
-
-      navigation.goBack();
-    } catch (error) {
-      console.error("End Match Error:", error);
-      Alert.alert("ผิดพลาด", "ไม่สามารถจบการแข่งขันได้");
+    if (scoreA > scoreB) {
+      winner = match.teamA;
+      loser = match.teamB;
+    } else if (scoreB > scoreA) {
+      winner = match.teamB;
+      loser = match.teamA;
+    } else {
+      winner = null; // เสมอ
+      loser = null;
     }
-  };
+
+    const matchRef = doc(
+      db,
+      "results",
+      `${matchId}_${match.teamA.id}_${match.teamB?.id || "null"}`
+    );
+
+    await setDoc(
+      matchRef,
+      {
+        matchId,
+        teamAId: match.teamA.id,
+        teamBId: match.teamB?.id || null,
+        teamA: match.teamA.teamName,
+        teamB: match.teamB?.teamName || null,
+        teamALogo: match.teamA?.teamLogo || null,
+        teamBLogo: match.teamB?.teamLogo || null,
+        scoreA,
+        scoreB,
+        winner: winner?.teamName || null,
+        loser: loser?.teamName || null,
+        isEnded: true,
+        endedAt: new Date(),
+        group: match.group || null, // บันทึกกรุ๊ป
+      },
+      { merge: true }
+    );
+
+    // อัพเดท standings
+    const updateStats = async (team, stats) => {
+      if (!team?.id) return;
+      const teamRef = doc(db, "standings", team.id);
+      const teamSnap = await getDoc(teamRef);
+
+      if (teamSnap.exists()) {
+        const current = teamSnap.data();
+        await updateDoc(teamRef, {
+          played: (current.played || 0) + 1,
+          win: (current.win || 0) + stats.win,
+          draw: (current.draw || 0) + stats.draw,
+          lose: (current.lose || 0) + stats.lose,
+          goalsFor: (current.goalsFor || 0) + stats.goalsFor,
+          goalsAgainst: (current.goalsAgainst || 0) + stats.goalsAgainst,
+          goalDifference:
+            (current.goalsFor || 0) + stats.goalsFor - ((current.goalsAgainst || 0) + stats.goalsAgainst),
+          points: (current.points || 0) + stats.points,
+          updatedAt: new Date(),
+        });
+      } else {
+        await setDoc(teamRef, {
+          teamId: team.id,
+          teamName: team.teamName,
+          teamLogo: team?.teamLogo || null,
+          played: 1,
+          win: stats.win,
+          draw: stats.draw,
+          lose: stats.lose,
+          goalsFor: stats.goalsFor,
+          goalsAgainst: stats.goalsAgainst,
+          goalDifference: stats.goalsFor - stats.goalsAgainst,
+          points: stats.points,
+          updatedAt: new Date(),
+        });
+      }
+    };
+
+    if (scoreA > scoreB) {
+      await updateStats(match.teamA, { win: 1, draw: 0, lose: 0, goalsFor: scoreA, goalsAgainst: scoreB, points: 3 });
+      await updateStats(match.teamB, { win: 0, draw: 0, lose: 1, goalsFor: scoreB, goalsAgainst: scoreA, points: 0 });
+    } else if (scoreB > scoreA) {
+      await updateStats(match.teamB, { win: 1, draw: 0, lose: 0, goalsFor: scoreB, goalsAgainst: scoreA, points: 3 });
+      await updateStats(match.teamA, { win: 0, draw: 0, lose: 1, goalsFor: scoreA, goalsAgainst: scoreB, points: 0 });
+    } else {
+      await updateStats(match.teamA, { win: 0, draw: 1, lose: 0, goalsFor: scoreA, goalsAgainst: scoreB, points: 1 });
+      await updateStats(match.teamB, { win: 0, draw: 1, lose: 0, goalsFor: scoreB, goalsAgainst: scoreA, points: 1 });
+    }
+
+    setIsEnded(true);
+    Alert.alert("สำเร็จ", `การแข่งขันสิ้นสุดแล้ว\nผล: ${scoreA} - ${scoreB}`);
+    navigation.goBack();
+  } catch (error) {
+    console.error("End Match Error:", error);
+    Alert.alert("ผิดพลาด", "ไม่สามารถจบการแข่งขันได้");
+  }
+};
 
   if (!match)
     return (
@@ -341,18 +389,18 @@ export default function ControlMatchScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity
-  style={[styles.fullWidthButton, { marginTop: 10, backgroundColor: "#202020" }]}
-  onPress={() => {
-    navigation.navigate("StreamerScreen", {
-      match,
-      matchId,
-      fullname,
-    });
-  }}
->
-  <Text style={[styles.buttonText, { color: "#07F469" }]}>เริ่มไลฟ์สด</Text>
-  <MaterialIcons name="live-tv" size={18} color="#07F469" />
-</TouchableOpacity>
+          style={[styles.fullWidthButton, { marginTop: 10, backgroundColor: "#202020" }]}
+          onPress={() => {
+            navigation.navigate("StreamerScreen", {
+              match,
+              matchId,
+              fullname,
+            });
+          }}
+        >
+          <Text style={[styles.buttonText, { color: "#07F469" }]}>เริ่มไลฟ์สด</Text>
+          <MaterialIcons name="live-tv" size={18} color="#07F469" />
+        </TouchableOpacity>
       </ScrollView>
 
       {/* Bottom buttons */}

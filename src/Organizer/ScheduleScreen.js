@@ -42,24 +42,26 @@ export default function ScheduleScreen() {
         const matchRef = doc(db, "matches", matchId);
         const matchSnap = await getDoc(matchRef);
         if (!matchSnap.exists()) return setLoading(false);
-        setMatchData(matchSnap.data());
+        const match = matchSnap.data();
+        setMatchData(match);
 
+        // ดึงผลการจับฉลาก
         const drawRef = doc(db, "draws", matchId);
         const drawSnap = await getDoc(drawRef);
         if (!drawSnap.exists()) return setLoading(false);
         const drawData = drawSnap.data();
 
+        // ดึงผลการแข่งขัน
         const resultsCol = collection(db, "results");
         const q = query(resultsCol, where("matchId", "==", matchId));
 
-        unsubscribeResults = onSnapshot(q, (querySnap) => {
+        unsubscribeResults = onSnapshot(q, async (querySnap) => {
           const resultsData = querySnap.docs.map((doc) => doc.data());
 
-          // 🟢 คำนวณตารางคะแนน
+          // คำนวณตารางคะแนน (ลีกคัพ)
           const table = {};
           resultsData.forEach((r) => {
-            if (!r.teamAId || !r.teamBId) return; // กัน error
-
+            if (!r.teamAId || !r.teamBId) return;
             if (!table[r.teamAId])
               table[r.teamAId] = { name: r.teamA, pts: 0, gf: 0, ga: 0 };
             if (!table[r.teamBId])
@@ -83,10 +85,10 @@ export default function ScheduleScreen() {
             .sort((a, b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf);
           setStandings(standingsArr);
 
-          // 🟢 Knockout Schedule
+          // สร้าง schedule
           const scheduleData = [];
 
-          // รอบแรก (จาก drawData.pairs)
+          // รอบลีก / รอบแรก
           drawData.pairs.forEach((pair) => {
             const result = resultsData.find(
               (r) =>
@@ -97,6 +99,7 @@ export default function ScheduleScreen() {
             scheduleData.push({
               id: `${matchId}_${pair.teamA?.id}_${pair.teamB?.id}`,
               round: "รอบแรก",
+              group: pair.round || "-",
               matchTime: pair.matchTime ? new Date(pair.matchTime) : new Date(),
               teamA: pair.teamA,
               teamB: pair.teamB,
@@ -112,69 +115,47 @@ export default function ScheduleScreen() {
             });
           });
 
-          // ถ้ารอบแรกจบ → สร้างชิงที่ 3 + ชิงชนะเลิศ
-          // ถ้ารอบแรกจบ → สร้างชิงที่ 3 + ชิงชนะเลิศ
-if (
-  scheduleData.length === 2 &&
-  scheduleData.every((m) => m.isEnded)
-) {
-  const winners = scheduleData.map((m) => ({
-    id: m.winnerId,
-    teamName: m.winner,
-    teamLogo: m.winnerLogo,
-  }));
-  const losers = scheduleData.map((m) => ({
-    id: m.loserId,
-    teamName: m.loser,
-    teamLogo: m.loserLogo,
-  }));
+          // 🟢 หากเป็นลีกคัพและรอบแรกจบ ให้สร้างรอบน็อกเอาท์
+          if (match.category2 === "ลีกคัพ") {
+            const groupRef = doc(db, "groups", matchId);
+            const groupSnap = await getDoc(groupRef);
+            const groupData = groupSnap.exists() ? groupSnap.data()?.groups : {};
+            const knockoutTeams = [];
 
-  const firstRoundEndTime = scheduleData[1].matchTime || new Date(); // ใช้เวลารอบแรกล่าสุด
+            for (let groupName in groupData) {
+              const teamsInGroup = groupData[groupName];
+              const groupTable = teamsInGroup
+                .map((team) => table[team.id] || { name: team.teamName, pts: 0, gf: 0, ga: 0 })
+                .map(t => ({ ...t, gd: t.gf - t.ga }))
+                .sort((a, b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf);
 
-  // รอบรองชนะเลิศ (ชิงที่ 3) ห่าง +1 ชั่วโมง
-  const resultThird = resultsData.find(
-    (r) =>
-      (r.teamAId === losers[0]?.id && r.teamBId === losers[1]?.id) ||
-      (r.teamAId === losers[1]?.id && r.teamBId === losers[0]?.id)
-  );
+              // top 2 ของแต่ละกลุ่มเข้ารอบน็อกเอาท์
+              knockoutTeams.push(...groupTable.slice(0, 2).map(t => ({
+                id: teamsInGroup.find(team => team.teamName === t.name).id,
+                teamName: t.name,
+                teamLogo: teamsInGroup.find(team => team.teamName === t.name).teamLogo,
+              })));
+            }
 
-  const thirdMatchTime = new Date(firstRoundEndTime.getTime() + 60 * 60 * 1000); // +1 ชั่วโมง
+            // สุ่มจับคู่รอบน็อกเอาท์
+            for (let i = knockoutTeams.length - 1; i > 0; i--) {
+              const j = Math.floor(Math.random() * (i + 1));
+              [knockoutTeams[i], knockoutTeams[j]] = [knockoutTeams[j], knockoutTeams[i]];
+            }
 
-  scheduleData.push({
-    id: `${matchId}_${losers[0]?.id}_${losers[1]?.id}`,
-    round: "รอบรองชนะเลิศ",
-    matchTime: thirdMatchTime,
-    teamA: losers[0],
-    teamB: losers[1],
-    scoreA: resultThird?.scoreA || 0,
-    scoreB: resultThird?.scoreB || 0,
-    winner: resultThird?.winner,
-    loser: resultThird?.loser,
-    isEnded: resultThird?.isEnded || false,
-  });
-
-  // รอบชิงชนะเลิศ ห่าง +1 ชั่วโมงจากรอบรอง
-  const resultFinal = resultsData.find(
-    (r) =>
-      (r.teamAId === winners[0]?.id && r.teamBId === winners[1]?.id) ||
-      (r.teamAId === winners[1]?.id && r.teamBId === winners[0]?.id)
-  );
-
-  const finalMatchTime = new Date(thirdMatchTime.getTime() + 60 * 60 * 1000); // +1 ชั่วโมง
-
-  scheduleData.push({
-    id: `${matchId}_${winners[0]?.id}_${winners[1]?.id}`,
-    round: "รอบชิงชนะเลิศ",
-    matchTime: finalMatchTime,
-    teamA: winners[0],
-    teamB: winners[1],
-    scoreA: resultFinal?.scoreA || 0,
-    scoreB: resultFinal?.scoreB || 0,
-    winner: resultFinal?.winner,
-    loser: resultFinal?.loser,
-    isEnded: resultFinal?.isEnded || false,
-  });
-}
+            let knockoutTime = new Date(scheduleData[scheduleData.length - 1]?.matchTime || new Date());
+            for (let i = 0; i < knockoutTeams.length; i += 2) {
+              const pair = {
+                id: `${matchId}_${knockoutTeams[i]?.id}_${knockoutTeams[i+1]?.id}`,
+                round: "น็อกเอาท์",
+                matchTime: new Date(knockoutTime),
+                teamA: knockoutTeams[i],
+                teamB: knockoutTeams[i+1] || null,
+              };
+              scheduleData.push(pair);
+              knockoutTime = new Date(knockoutTime.getTime() + 55*60000);
+            }
+          }
 
           setSchedule(scheduleData);
           setLoading(false);
@@ -208,7 +189,6 @@ if (
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor="#07F469" barStyle="light-content" />
-      {/* Header */}
       <LinearGradient
         colors={["#14141400", "#07F469"]}
         style={styles.headerBox}
@@ -232,96 +212,85 @@ if (
         </View>
       </LinearGradient>
 
-      
-      {/* Schedule List */}
       <ScrollView contentContainerStyle={{ padding: 20 }}>
-        {["รอบแรก", "รอบรองชนะเลิศ", "รอบชิงชนะเลิศ"].map((round) => {
-          const matches = schedule.filter((m) => m.round === round);
-          if (!matches.length) return null;
+        {schedule.map((match) => {
+          const isMatchEnded = !!match.isEnded;
           return (
-            <View key={round}>
-              <Text style={styles.roundText}>{round}</Text>
-              {matches.map((match) => {
-                const isMatchEnded = !!match.isEnded;
-                return (
-                  <View
-                    key={match.id}
-                    style={[styles.matchBox, isMatchEnded && { opacity: 0.6 }]}
-                  >
-                    {/* ทีม A */}
-                    <View style={styles.teamBox}>
-                      {match.teamA?.teamLogo && (
-                        <Image
-                          source={{ uri: match.teamA.teamLogo }}
-                          style={styles.teamLogo}
-                        />
-                      )}
-                      <Text style={styles.teamName}>
-                        {match.teamA?.teamName || "-"}
-                      </Text>
-                      <Text style={styles.score}>{match.scoreA}</Text>
-                    </View>
-                    
-                <View style={{ alignItems: "center" }}>
+            <View
+              key={match.id}
+              style={[styles.matchBox, isMatchEnded && { opacity: 0.6 }]}
+            >
+              {/* ทีม A */}
+              <View style={styles.teamBox}>
+                {match.teamA?.teamLogo && (
+                  <Image
+                    source={{ uri: match.teamA.teamLogo }}
+                    style={styles.teamLogo}
+                  />
+                )}
+                <Text style={styles.teamName}>
+                  {match.teamA?.teamName || "-"}
+                </Text>
+                <Text style={styles.score}>{match.scoreA || 0}</Text>
+              </View>
 
+              {/* VS + เวลา + กลุ่ม */}
+              <View style={{ alignItems: "center" }}>
+                <View style={styles.timeBox}>
+                  <Text style={styles.timeText}>
+                    {match.matchTime
+                      ? match.matchTime.toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
+                      : "-"}
+                  </Text>
                 </View>
-                    {/* VS */}
-                    <View style={{ alignItems: "center" }}>
-                      <View style={styles.timeBox}>
-                      <Text style={styles.timeText}>
-                      {match.matchTime
-                        ? match.matchTime.toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })
-                        : "-"}
-                    </Text>
-                      </View>
-                      <Text style={styles.vsText}>VS</Text>
-                      <Text style={styles.roundSmall}>{match.round}</Text>
-                    </View>
+                <Text style={styles.vsText}>VS</Text>
+                <Text style={styles.roundSmall}>{match.round}</Text>
+                {match.group && (
+                  <Text style={styles.groupText}>{match.group}</Text>
+                )}
+              </View>
 
-                    {/* ทีม B */}
-                    <View style={styles.teamBox}>
-                      {match.teamB?.teamLogo && (
-                        <Image
-                          source={{ uri: match.teamB.teamLogo }}
-                          style={styles.teamLogo}
-                        />
-                      )}
-                      <Text style={styles.teamName}>
-                        {match.teamB?.teamName || "-"}
-                      </Text>
-                      <Text style={styles.score}>{match.scoreB}</Text>
-                    </View>
+              {/* ทีม B */}
+              <View style={styles.teamBox}>
+                {match.teamB?.teamLogo && (
+                  <Image
+                    source={{ uri: match.teamB.teamLogo }}
+                    style={styles.teamLogo}
+                  />
+                )}
+                <Text style={styles.teamName}>
+                  {match.teamB?.teamName || "-"}
+                </Text>
+                <Text style={styles.score}>{match.scoreB || 0}</Text>
+              </View>
 
-                    {/* ปุ่มควบคุม */}
-                    {isMatchEnded ? (
-                      <View style={styles.winnerBox}>
-                        <Text style={styles.winnerText}>
-                          {match.winner ? `ผู้ชนะ : ${match.winner}` : "เสมอ"}
-                        </Text>
-                      </View>
-                    ) : (
-                      <TouchableOpacity
-                        style={styles.controlButton}
-                        disabled={!match.teamB}
-                        onPress={() =>
-                          navigation.navigate("ControlMatchScreen", {
-                            match,
-                            fullname: matchData?.fullname,
-                            matchId,
-                          })
-                        }
-                      >
-                        <Text style={styles.controlButtonText}>
-                          ควบคุมการแข่งขัน
-                        </Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                );
-              })}
+              {/* ปุ่มควบคุม / แสดงผู้ชนะ */}
+              {isMatchEnded ? (
+                <View style={styles.winnerBox}>
+                  <Text style={styles.winnerText}>
+                    {match.winner ? `ผู้ชนะ : ${match.winner}` : "เสมอ"}
+                  </Text>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={styles.controlButton}
+                  disabled={!match.teamB}
+                  onPress={() =>
+                    navigation.navigate("ControlMatchScreen", {
+                      match,
+                      fullname: matchData?.fullname,
+                      matchId,
+                    })
+                  }
+                >
+                  <Text style={styles.controlButtonText}>
+                    ควบคุมการแข่งขัน
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
           );
         })}
@@ -353,14 +322,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   textBox: { flex: 1, alignItems: "flex-end", marginEnd: 10 },
- titleText: { color: "#fff", fontSize: 14, fontFamily: "Kanit-SemiBold" },
+  titleText: { color: "#fff", fontSize: 14, fontFamily: "Kanit-SemiBold" },
   subTitleText: { color: "#fff", fontSize: 14, fontFamily: "Kanit-SemiBold" },
-  roundText: {
-    color: "#07F469",
-    fontSize: 14,
-fontFamily: "Kanit-SemiBold",
-    marginBottom: 8,
-  },
   matchBox: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -409,8 +372,6 @@ fontFamily: "Kanit-SemiBold",
     borderColor: "#07F469",
   },
   winnerText: { color: "#07F469", fontSize: 13,fontFamily: "Kanit-SemiBold" },
-  standingsButton: { alignSelf: "flex-end", marginRight: 20, marginBottom: 10 },
-  standingsButtonText: { color: "#07F469", fontSize: 13,fontFamily: "Kanit-SemiBold" },
   timeBox: {
     backgroundColor: "#154127",
     paddingHorizontal: 10,
@@ -423,5 +384,15 @@ fontFamily: "Kanit-SemiBold",
     fontSize: 12,
     fontFamily: "Kanit-Regular",
     textAlign: "center",
+  },
+  groupText: {
+    color: "#07F469",
+    fontSize: 11,
+    marginTop: -4,
+    fontFamily: "Kanit-Regular",
+    backgroundColor: "#154127",
+    paddingHorizontal: 10,
+    paddingVertical: 2,
+    borderRadius: 10,
   },
 });
